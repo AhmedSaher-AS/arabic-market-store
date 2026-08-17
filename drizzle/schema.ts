@@ -1,4 +1,4 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,7 +25,7 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const paymentMethods = ["فودافون كاش", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
+export const paymentMethods = ["فودافون كاش", "فوري", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
 export const orderStatuses = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
 
 export const orders = mysqlTable("orders", {
@@ -41,6 +41,7 @@ export const orders = mysqlTable("orders", {
   paymentMethod: mysqlEnum("paymentMethod", paymentMethods).notNull(),
   status: mysqlEnum("status", orderStatuses).default("معلق").notNull(),
   paymentStatus: mysqlEnum("paymentStatus", ["بانتظار الدفع", "مدفوع", "فشل", "مسترد"]).default("بانتظار الدفع").notNull(),
+  paymentReference: varchar("paymentReference", { length: 64 }).notNull().default(""),
   total: decimal("total", { precision: 12, scale: 2 }).notNull(),
   currencyCode: varchar("currencyCode", { length: 8 }).notNull(),
   checkoutUrl: text("checkoutUrl").notNull(),
@@ -62,6 +63,50 @@ export const orderItems = mysqlTable("orderItems", {
   lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+export const paymentSettings = mysqlTable("paymentSettings", {
+  id: int("id").primaryKey(),
+  vodafoneCashNumber: varchar("vodafoneCashNumber", { length: 32 }).notNull(),
+  vodafoneCashRecipient: varchar("vodafoneCashRecipient", { length: 160 }).notNull(),
+  fawryMode: mysqlEnum("fawryMode", ["معطّل", "إثبات يدوي", "تكامل فوري"]).default("معطّل").notNull(),
+  fawryMerchantLabel: varchar("fawryMerchantLabel", { length: 160 }).notNull(),
+  fawryServiceCode: varchar("fawryServiceCode", { length: 64 }).notNull(),
+  fawryInstructions: text("fawryInstructions").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const paymentProofs = mysqlTable("paymentProofs", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull().references(() => orders.id),
+  userId: int("userId").notNull().references(() => users.id),
+  transactionReference: varchar("transactionReference", { length: 160 }),
+  note: text("note"),
+  imageKey: varchar("imageKey", { length: 512 }).notNull(),
+  imageUrl: text("imageUrl").notNull(),
+  status: mysqlEnum("status", ["قيد المراجعة", "مقبول", "مرفوض"]).default("قيد المراجعة").notNull(),
+  reviewNote: text("reviewNote"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [uniqueIndex("paymentProofs_orderId_unique").on(table.orderId)]);
+
+export const digitalBooks = mysqlTable("digitalBooks", {
+  id: int("id").autoincrement().primaryKey(),
+  productHandle: varchar("productHandle", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  pdfKey: varchar("pdfKey", { length: 512 }).notNull(),
+  pdfUrl: text("pdfUrl").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const digitalEntitlements = mysqlTable("digitalEntitlements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
+  orderId: int("orderId").notNull().references(() => orders.id),
+  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+}, table => [uniqueIndex("digitalEntitlements_orderId_book_unique").on(table.orderId, table.digitalBookId)]);
 
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;

@@ -1,0 +1,1 @@
+ALTER TABLE `orders` MODIFY COLUMN `paymentReference` varchar(64) NOT NULL DEFAULT '';

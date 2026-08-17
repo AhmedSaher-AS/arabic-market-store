@@ -9,7 +9,9 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import Catalog from "./pages/Catalog";
 import Checkout from "./pages/Checkout";
+import DigitalLibrary from "./pages/DigitalLibrary";
 import Home from "./pages/Home";
+import PaymentProof from "./pages/PaymentProof";
 import ProductDetails from "./pages/ProductDetails";
 
 function Router() {
@@ -20,7 +22,9 @@ function Router() {
       <Route path={"/المنتجات"} component={Catalog} />
       <Route path={"/المنتجات/:handle"} component={ProductDetails} />
       <Route path={"/إتمام-الطلب"} component={Checkout} />
+      <Route path={"/إثبات-الدفع/:orderId"} component={PaymentProof} />
       <Route path={"/حسابي"} component={Account} />
+      <Route path={"/مكتبتي"} component={DigitalLibrary} />
       <Route path={"/المدير"} component={Admin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

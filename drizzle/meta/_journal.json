@@ -15,6 +15,20 @@
       "when": 1786995291962,
       "tag": "0001_blushing_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786997079984,
+      "tag": "0002_mean_sharon_carter",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786997128904,
+      "tag": "0003_outstanding_ulik",
+      "breakpoints": true
     }
   ]
 }

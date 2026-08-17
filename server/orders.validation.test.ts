@@ -14,8 +14,12 @@ const validDraft = {
 };
 
 describe("orderDraftSchema", () => {
-  it("accepts one of the four supported payment methods and complete delivery data", () => {
+  it("accepts supported payment methods and complete delivery data", () => {
     expect(orderDraftSchema.parse(validDraft)).toMatchObject(validDraft);
+  });
+
+  it("accepts Fawry as a supported manual payment method", () => {
+    expect(orderDraftSchema.parse({ ...validDraft, paymentMethod: "فوري" }).paymentMethod).toBe("فوري");
   });
 
   it("rejects unsupported payment methods and incomplete addresses", () => {
