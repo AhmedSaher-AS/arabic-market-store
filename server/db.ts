@@ -6,6 +6,11 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/** مخصص لاختبارات التكامل المعزولة فقط؛ لا يُستدعى في وقت تشغيل التطبيق. */
+export function setDbForTesting(instance: ReturnType<typeof drizzle> | null) {
+  _db = instance;
+}
+
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
