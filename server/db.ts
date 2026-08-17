@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, orderItems, orders, Order, orderStatuses, users } from "../drizzle/schema";
+import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +90,85 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+type OrderDraft = {
+  userId: number;
+  customerName: string;
+  customerPhone: string;
+  shippingAddress: string;
+  country: string;
+  city: string;
+  paymentMethod: (typeof orders.$inferInsert)["paymentMethod"];
+};
+
+function createOrderNumber() {
+  return `SA-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+export async function createOrderFromCart(draft: OrderDraft, cart: Cart): Promise<Order> {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  if (!cart.items.length) throw new Error("لا يمكن إنشاء طلب من سلة فارغة.");
+
+  const total = Number.parseFloat(cart.total.amount);
+  if (!Number.isFinite(total) || total <= 0) throw new Error("إجمالي الطلب غير صالح.");
+
+  return db.transaction(async tx => {
+    const inserted = await tx.insert(orders).values({
+      orderNumber: createOrderNumber(),
+      userId: draft.userId,
+      sourceCartId: cart.id,
+      customerName: draft.customerName,
+      customerPhone: draft.customerPhone,
+      shippingAddress: draft.shippingAddress,
+      country: draft.country,
+      city: draft.city,
+      paymentMethod: draft.paymentMethod,
+      total: total.toFixed(2),
+      currencyCode: cart.total.currencyCode,
+      checkoutUrl: cart.checkoutUrl,
+    });
+    const orderId = Number(inserted[0].insertId);
+
+    await tx.insert(orderItems).values(
+      cart.items.map(item => ({
+        orderId,
+        variantId: item.variantId,
+        productHandle: item.productHandle,
+        productTitle: item.productTitle,
+        variantTitle: item.variantTitle === "Default Title" ? null : item.variantTitle,
+        imageUrl: item.image?.url ?? null,
+        unitPrice: Number.parseFloat(item.unitPrice.amount).toFixed(2),
+        quantity: item.quantity,
+        lineTotal: Number.parseFloat(item.lineTotal.amount).toFixed(2),
+      }))
+    );
+
+    const created = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!created[0]) throw new Error("تعذر استرجاع الطلب بعد إنشائه.");
+    return created[0];
+  });
+}
+
+export async function listOrdersForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
+}
+
+export async function listAllOrders() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(orders).orderBy(desc(orders.createdAt));
+}
+
+export async function updateOrderStatus(orderId: number, status: (typeof orderStatuses)[number]) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+}
+
+export async function markOwnerNotified(orderId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(orders).set({ ownerNotified: 1 }).where(eq(orders.id, orderId));
+}

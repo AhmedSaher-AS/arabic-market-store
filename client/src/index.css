@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: "Cairo", Arial, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -119,6 +120,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Cairo", Arial, sans-serif;
+    direction: rtl;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -131,6 +134,16 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b8cfc2 transparent;
+}
+
+::selection {
+  background: #d7e8df;
+  color: #173c37;
 }
 
 @layer components {

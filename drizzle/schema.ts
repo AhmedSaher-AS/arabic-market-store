@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,4 +25,43 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const paymentMethods = ["فودافون كاش", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
+export const orderStatuses = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
+
+export const orders = mysqlTable("orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 32 }).notNull().unique(),
+  userId: int("userId").notNull().references(() => users.id),
+  sourceCartId: varchar("sourceCartId", { length: 512 }).notNull(),
+  customerName: varchar("customerName", { length: 160 }).notNull(),
+  customerPhone: varchar("customerPhone", { length: 32 }).notNull(),
+  shippingAddress: text("shippingAddress").notNull(),
+  country: varchar("country", { length: 96 }).notNull(),
+  city: varchar("city", { length: 96 }).notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", paymentMethods).notNull(),
+  status: mysqlEnum("status", orderStatuses).default("معلق").notNull(),
+  paymentStatus: mysqlEnum("paymentStatus", ["بانتظار الدفع", "مدفوع", "فشل", "مسترد"]).default("بانتظار الدفع").notNull(),
+  total: decimal("total", { precision: 12, scale: 2 }).notNull(),
+  currencyCode: varchar("currencyCode", { length: 8 }).notNull(),
+  checkoutUrl: text("checkoutUrl").notNull(),
+  ownerNotified: int("ownerNotified").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const orderItems = mysqlTable("orderItems", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull().references(() => orders.id),
+  variantId: varchar("variantId", { length: 255 }).notNull(),
+  productHandle: varchar("productHandle", { length: 255 }).notNull(),
+  productTitle: varchar("productTitle", { length: 255 }).notNull(),
+  variantTitle: varchar("variantTitle", { length: 255 }),
+  imageUrl: text("imageUrl"),
+  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+  quantity: int("quantity").notNull(),
+  lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
