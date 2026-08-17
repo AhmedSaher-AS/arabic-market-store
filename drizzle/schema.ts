@@ -44,6 +44,10 @@ export const orders = mysqlTable("orders", {
   paymentStatus: mysqlEnum("paymentStatus", ["بانتظار الدفع", "مدفوع", "فشل", "مسترد"]).default("بانتظار الدفع").notNull(),
   paymentReference: varchar("paymentReference", { length: 64 }).notNull().default(""),
   total: decimal("total", { precision: 12, scale: 2 }).notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  shippingAmount: decimal("shippingAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  couponCode: varchar("couponCode", { length: 64 }),
   currencyCode: varchar("currencyCode", { length: 8 }).notNull(),
   checkoutUrl: text("checkoutUrl").notNull(),
   ownerNotified: int("ownerNotified").default(0).notNull(),
@@ -130,6 +134,45 @@ export const localProducts = mysqlTable("localProducts", {
   isAvailable: int("isAvailable").notNull().default(1),
   imageKey: varchar("imageKey", { length: 512 }),
   imageUrl: text("imageUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const customerAddresses = mysqlTable("customerAddresses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  label: varchar("label", { length: 80 }).notNull().default("عنوان"),
+  recipientName: varchar("recipientName", { length: 160 }).notNull(),
+  phone: varchar("phone", { length: 32 }).notNull(),
+  country: varchar("country", { length: 96 }).notNull(),
+  city: varchar("city", { length: 96 }).notNull(),
+  address: text("address").notNull(),
+  isDefault: int("isDefault").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const shippingZones = mysqlTable("shippingZones", {
+  id: int("id").autoincrement().primaryKey(),
+  city: varchar("city", { length: 96 }).notNull().unique(),
+  label: varchar("label", { length: 160 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  currencyCode: varchar("currencyCode", { length: 8 }).notNull().default("EGP"),
+  estimatedDays: varchar("estimatedDays", { length: 80 }).notNull().default("يُحدّد عند تأكيد الطلب"),
+  isActive: int("isActive").notNull().default(1),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const discountCodes = mysqlTable("discountCodes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull().unique(),
+  discountType: mysqlEnum("discountType", ["نسبة", "مبلغ ثابت"]).notNull(),
+  value: decimal("value", { precision: 12, scale: 2 }).notNull(),
+  minimumAmount: decimal("minimumAmount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  maxUses: int("maxUses").notNull().default(0),
+  usedCount: int("usedCount").notNull().default(0),
+  isActive: int("isActive").notNull().default(1),
+  expiresAt: timestamp("expiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

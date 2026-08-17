@@ -8,6 +8,7 @@ import { localProductsRouter } from "./routers/localProducts";
 import { ordersRouter } from "./routers/orders";
 import { paymentsRouter } from "./routers/payments";
 import { storeSettingsRouter } from "./routers/storeSettings";
+import { storeBasicsRouter } from "./routers/storeBasics";
 import { wishlistRouter } from "./routers/wishlist";
 
 export const appRouter = router({
@@ -29,6 +30,7 @@ export const appRouter = router({
   digitalBooks: digitalBooksRouter,
   localProducts: localProductsRouter,
   storeSettings: storeSettingsRouter,
+  storeBasics: storeBasicsRouter,
   wishlist: wishlistRouter,
 
   // TODO: add feature routers here, e.g.

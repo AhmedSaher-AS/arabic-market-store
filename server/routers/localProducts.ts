@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { createLocalProduct, createLocalProductOrder, listLocalProducts, removeLocalProduct, updateLocalProduct } from "../db";
+import { createLocalProduct, listLocalProducts, markOwnerNotified, removeLocalProduct, updateLocalProduct } from "../db";
+import { createEnhancedLocalProductOrder } from "../localCommerce";
+import { notifyOwner } from "../_core/notification";
 import { parseBase64Upload, safeFileStem } from "../fileUpload";
 import { storagePut } from "../storage";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
@@ -42,7 +44,9 @@ export const localProductsRouter = router({
     return { success: true } as const;
   }),
   remove: adminProcedure.input(z.object({ productId: z.number().int().positive(), confirmed: z.literal(true) })).mutation(async ({ input }) => { await removeLocalProduct(input.productId); return { success: true } as const; }),
-  purchase: protectedProcedure.input(z.object({ productId: z.number().int().positive(), customerName: z.string().trim().min(2).max(160), customerPhone: z.string().trim().min(7).max(32), shippingAddress: z.string().trim().min(5).max(2000), country: z.string().trim().min(2).max(96), city: z.string().trim().min(2).max(96), paymentMethod: z.enum(paymentMethods) })).mutation(async ({ ctx, input }) => {
-    return createLocalProductOrder({ ...input, userId: ctx.user.id });
+  purchase: protectedProcedure.input(z.object({ productId: z.number().int().positive(), customerName: z.string().trim().min(2).max(160), customerPhone: z.string().trim().min(7).max(32), shippingAddress: z.string().trim().min(5).max(2000), country: z.string().trim().min(2).max(96), city: z.string().trim().min(2).max(96), quantity: z.number().int().min(1).max(100).default(1), couponCode: z.string().trim().max(64).optional(), paymentMethod: z.enum(paymentMethods) })).mutation(async ({ ctx, input }) => {
+    const order = await createEnhancedLocalProductOrder({ ...input, userId: ctx.user.id });
+    try { const notified = await notifyOwner({ title: `طلب محلي جديد ${order.orderNumber}`, content: `ورد طلب جديد بقيمة ${order.total} ${order.currencyCode}. العميل: ${input.customerName}. المدينة: ${input.city}. طريقة الدفع: ${input.paymentMethod}.` }); if (notified) await markOwnerNotified(order.orderId); } catch (error) { console.warn("[LocalProducts] Owner notification failed after order creation", error); }
+    return order;
   }),
 });

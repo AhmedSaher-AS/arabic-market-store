@@ -3,6 +3,7 @@ import { DigitalBookUploader } from "@/components/DigitalBookUploader";
 import { LocalProductManager } from "@/components/LocalProductManager";
 import { PaymentOperations } from "@/components/PaymentOperations";
 import { StoreContentEditor } from "@/components/StoreContentEditor";
+import { StoreBasicsManager } from "@/components/StoreBasicsManager";
 import { StoreLayout } from "@/components/StoreLayout";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
@@ -47,6 +48,7 @@ export default function Admin() {
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#ebe8f5] text-[#50427b]"><LayoutDashboard className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المحتوى والكتب</h2><p className="mt-2 text-sm leading-7 text-stone-500">عدّل نصوص الواجهة ووسائل الدفع، ثم ارفع أو استبدل أو احذف ملفات الكتب الرقمية.</p></div>
     </section>
     <LocalProductManager />
+    <StoreBasicsManager />
     <StoreContentEditor />
     <div id="payment-operations" className="scroll-mt-24"><PaymentOperations /></div>
     <DigitalBookUploader />

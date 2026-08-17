@@ -19,6 +19,8 @@ import PaymentProof from "./pages/PaymentProof";
 import ProductDetails from "./pages/ProductDetails";
 import SearchPage from "./pages/SearchPage";
 import WishlistPage from "./pages/WishlistPage";
+import StorePolicy from "./pages/StorePolicy";
+import StoreTrust from "./pages/StoreTrust";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -30,6 +32,10 @@ function Router() {
       <Route path={"/بحث"} component={SearchPage} />
       <Route path={"/المفضلة"} component={WishlistPage} />
       <Route path={"/المساعدة"} component={HelpCenter} />
+      <Route path={"/سياسة-الشحن"} component={StorePolicy} />
+      <Route path={"/الاستبدال-والاسترجاع"} component={StorePolicy} />
+      <Route path={"/الخصوصية"} component={StorePolicy} />
+      <Route path={"/ضمان-المتجر"} component={StoreTrust} />
       <Route path={"/المنتجات"} component={Catalog} />
       <Route path={"/المنتجات/:handle"} component={ProductDetails} />
       <Route path={"/إتمام-الطلب"} component={Checkout} />
