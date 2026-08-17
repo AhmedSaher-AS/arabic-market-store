@@ -134,6 +134,20 @@ export const localProducts = mysqlTable("localProducts", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const wishlistItems = mysqlTable("wishlistItems", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  itemType: mysqlEnum("itemType", ["منتج", "كتاب رقمي"]).notNull(),
+  itemId: int("itemId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  subtitle: varchar("subtitle", { length: 255 }).notNull().default(""),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  currencyCode: varchar("currencyCode", { length: 8 }).notNull().default("EGP"),
+  imageUrl: text("imageUrl"),
+  targetPath: varchar("targetPath", { length: 512 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [uniqueIndex("wishlist_user_item_unique").on(table.userId, table.itemType, table.itemId)]);
+
 export const digitalEntitlements = mysqlTable("digitalEntitlements", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id),

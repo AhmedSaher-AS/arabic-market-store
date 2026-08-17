@@ -1,6 +1,6 @@
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -35,6 +35,8 @@ export function StoreHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link href="/بحث" aria-label="البحث في المتجر" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid"><Search className="h-5 w-5" /></Link>
+          <Link href="/المفضلة" aria-label="المفضلة" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid"><Heart className="h-5 w-5" /></Link>
           <Link href="/حسابي" aria-label="حسابي" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid">
             <UserRound className="h-5 w-5" />
           </Link>
@@ -52,7 +54,7 @@ export function StoreHeader() {
       {isMenuOpen && (
         <nav className="border-t border-stone-200 bg-[#fffdf8] px-5 py-4 lg:hidden" aria-label="التنقل عبر الجوال">
           <div className="mx-auto grid max-w-2xl grid-cols-2 gap-2">
-            {[...links, { label: "حسابي", href: "/حسابي" }].map(link => (
+            {[...links, { label: "البحث", href: "/بحث" }, { label: "المفضلة", href: "/المفضلة" }, { label: "حسابي", href: "/حسابي" }].map(link => (
               <Link key={link.href} onClick={() => setIsMenuOpen(false)} href={link.href} className="rounded-xl bg-stone-100 px-4 py-3 text-center text-sm font-bold text-[#173c37] transition-colors hover:bg-[#e3eee8]">
                 {link.label}
               </Link>

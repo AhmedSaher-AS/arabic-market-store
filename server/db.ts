@@ -1,6 +1,6 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
+import { digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -393,6 +393,35 @@ export async function removeLocalProduct(productId: number) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
   await db.delete(localProducts).where(eq(localProducts.id, productId));
+}
+
+export type WishlistItemInput = {
+  itemType: "منتج" | "كتاب رقمي";
+  itemId: number;
+  title: string;
+  subtitle: string;
+  price: string;
+  currencyCode: string;
+  imageUrl?: string | null;
+  targetPath: string;
+};
+
+export async function listWishlistItems(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(wishlistItems).where(eq(wishlistItems.userId, userId)).orderBy(desc(wishlistItems.createdAt));
+}
+
+export async function saveWishlistItem(userId: number, item: WishlistItemInput) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.insert(wishlistItems).values({ userId, ...item }).onDuplicateKeyUpdate({ set: { title: item.title, subtitle: item.subtitle, price: item.price, currencyCode: item.currencyCode, imageUrl: item.imageUrl, targetPath: item.targetPath } });
+}
+
+export async function removeWishlistItem(userId: number, itemType: WishlistItemInput["itemType"], itemId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.delete(wishlistItems).where(and(eq(wishlistItems.userId, userId), eq(wishlistItems.itemType, itemType), eq(wishlistItems.itemId, itemId)));
 }
 
 export async function createLocalProductOrder(input: { productId: number; userId: number; customerName: string; customerPhone: string; shippingAddress: string; country: string; city: string; paymentMethod: (typeof paymentMethods)[number] }) {

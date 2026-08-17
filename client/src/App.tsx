@@ -11,11 +11,14 @@ import Catalog from "./pages/Catalog";
 import Checkout from "./pages/Checkout";
 import DigitalLibrary from "./pages/DigitalLibrary";
 import Home from "./pages/Home";
+import HelpCenter from "./pages/HelpCenter";
 import LocalDigitalBooks from "./pages/LocalDigitalBooks";
 import LocalProducts from "./pages/LocalProducts";
 import OrderTracking from "./pages/OrderTracking";
 import PaymentProof from "./pages/PaymentProof";
 import ProductDetails from "./pages/ProductDetails";
+import SearchPage from "./pages/SearchPage";
+import WishlistPage from "./pages/WishlistPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -24,6 +27,9 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/كتب-رقمية"} component={LocalDigitalBooks} />
       <Route path={"/متجر-مستقل"} component={LocalProducts} />
+      <Route path={"/بحث"} component={SearchPage} />
+      <Route path={"/المفضلة"} component={WishlistPage} />
+      <Route path={"/المساعدة"} component={HelpCenter} />
       <Route path={"/المنتجات"} component={Catalog} />
       <Route path={"/المنتجات/:handle"} component={ProductDetails} />
       <Route path={"/إتمام-الطلب"} component={Checkout} />
