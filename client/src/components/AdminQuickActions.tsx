@@ -1,6 +1,7 @@
-import { Archive, BookOpen, ClipboardList, FilePenLine, WalletCards } from "lucide-react";
+import { Archive, BookOpen, ClipboardList, FilePenLine, PackagePlus, WalletCards } from "lucide-react";
 
 const actions = [
+  { href: "#add-product", label: "إضافة منتج", hint: "منك أو من Shopify", icon: PackagePlus, tone: "bg-[#eaf3ee] text-[#2d7a51]" },
   { href: "#product-management", label: "كل المنتجات", hint: "كتب وملابس وأجهزة", icon: Archive, tone: "bg-[#f7ead6] text-[#9a5821]" },
   { href: "#store-content", label: "محتوى الواجهة", hint: "العناوين والوصف", icon: FilePenLine, tone: "bg-[#e3eee8] text-[#173c37]" },
   { href: "#payment-operations", label: "إعدادات الدفع", hint: "واتساب وفودافون وفوري", icon: WalletCards, tone: "bg-[#f7ead6] text-[#9a5821]" },
