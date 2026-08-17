@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { commerceRouter } from "./routers/commerce";
 import { digitalBooksRouter } from "./routers/digitalBooks";
+import { localProductsRouter } from "./routers/localProducts";
 import { ordersRouter } from "./routers/orders";
 import { paymentsRouter } from "./routers/payments";
 import { storeSettingsRouter } from "./routers/storeSettings";
@@ -25,6 +26,7 @@ export const appRouter = router({
   orders: ordersRouter,
   payments: paymentsRouter,
   digitalBooks: digitalBooksRouter,
+  localProducts: localProductsRouter,
   storeSettings: storeSettingsRouter,
 
   // TODO: add feature routers here, e.g.

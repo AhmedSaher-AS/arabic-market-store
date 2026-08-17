@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBooks, digitalEntitlements, InsertUser, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
+import { digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -355,6 +355,63 @@ export async function listAvailableDigitalBooks() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(digitalBooks).where(eq(digitalBooks.isAvailable, 1)).orderBy(desc(digitalBooks.updatedAt));
+}
+
+export type LocalProductInput = {
+  handle: string;
+  title: string;
+  description: string;
+  category: "كتب" | "ملابس" | "أجهزة" | "متنوعة";
+  tags: string;
+  price: string;
+  currencyCode: string;
+  inventory: number;
+  isAvailable: number;
+  imageKey?: string | null;
+  imageUrl?: string | null;
+};
+
+export async function listLocalProducts(onlyAvailable = false) {
+  const db = await getDb();
+  if (!db) return [];
+  return onlyAvailable ? db.select().from(localProducts).where(eq(localProducts.isAvailable, 1)).orderBy(desc(localProducts.updatedAt)) : db.select().from(localProducts).orderBy(desc(localProducts.updatedAt));
+}
+
+export async function createLocalProduct(input: LocalProductInput) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.insert(localProducts).values(input);
+}
+
+export async function updateLocalProduct(productId: number, input: LocalProductInput) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.update(localProducts).set(input).where(eq(localProducts.id, productId));
+}
+
+export async function removeLocalProduct(productId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.delete(localProducts).where(eq(localProducts.id, productId));
+}
+
+export async function createLocalProductOrder(input: { productId: number; userId: number; customerName: string; customerPhone: string; shippingAddress: string; country: string; city: string; paymentMethod: (typeof paymentMethods)[number] }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  return db.transaction(async tx => {
+    const product = (await tx.select().from(localProducts).where(eq(localProducts.id, input.productId)).limit(1))[0];
+    if (!product || !product.isAvailable || product.inventory < 1) throw new Error("هذا المنتج غير متاح للطلب حاليًا.");
+    const suffix = `${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const orderNumber = `LP-${suffix}`;
+    const paymentReference = `PAY-${suffix}`;
+    const total = Number(product.price).toFixed(2);
+    const inserted = await tx.insert(orders).values({ orderNumber, userId: input.userId, sourceCartId: `local-product-${product.id}-${suffix}`, customerName: input.customerName, customerPhone: input.customerPhone, shippingAddress: input.shippingAddress, country: input.country, city: input.city, paymentMethod: input.paymentMethod, total, currencyCode: product.currencyCode, paymentReference, checkoutUrl: "" });
+    const orderId = Number(inserted[0].insertId);
+    await tx.insert(orderItems).values({ orderId, variantId: `local-product-${product.id}`, productHandle: product.handle, productTitle: product.title, variantTitle: product.category, imageUrl: product.imageUrl, unitPrice: total, quantity: 1, lineTotal: total });
+    const stockUpdate = await tx.update(localProducts).set({ inventory: product.inventory - 1 }).where(and(eq(localProducts.id, product.id), gt(localProducts.inventory, 0)));
+    if (!stockUpdate[0].affectedRows) throw new Error("نفد مخزون المنتج أثناء تسجيل الطلب. حدّث الصفحة وحاول مجددًا.");
+    return { orderId, orderNumber, paymentReference, total, currencyCode: product.currencyCode };
+  });
 }
 
 export async function listAllDigitalBooks() {

@@ -57,6 +57,13 @@
       "when": 1787002603966,
       "tag": "0007_wooden_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1787003018147,
+      "tag": "0008_slippery_kabuki",
+      "breakpoints": true
     }
   ]
 }

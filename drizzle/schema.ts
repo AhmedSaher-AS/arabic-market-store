@@ -27,6 +27,7 @@ export type InsertUser = typeof users.$inferInsert;
 
 export const paymentMethods = ["فودافون كاش", "فوري", "واتساب", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
 export const orderStatuses = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
+export const localProductCategories = ["كتب", "ملابس", "أجهزة", "متنوعة"] as const;
 
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
@@ -112,6 +113,23 @@ export const digitalBooks = mysqlTable("digitalBooks", {
   fileName: varchar("fileName", { length: 255 }).notNull(),
   pdfKey: varchar("pdfKey", { length: 512 }).notNull(),
   pdfUrl: text("pdfUrl").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const localProducts = mysqlTable("localProducts", {
+  id: int("id").autoincrement().primaryKey(),
+  handle: varchar("handle", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: varchar("description", { length: 5000 }).notNull().default(""),
+  category: mysqlEnum("category", localProductCategories).notNull(),
+  tags: varchar("tags", { length: 1000 }).notNull().default(""),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  currencyCode: varchar("currencyCode", { length: 8 }).notNull().default("EGP"),
+  inventory: int("inventory").notNull().default(0),
+  isAvailable: int("isAvailable").notNull().default(1),
+  imageKey: varchar("imageKey", { length: 512 }),
+  imageUrl: text("imageUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

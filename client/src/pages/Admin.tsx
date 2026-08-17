@@ -1,15 +1,14 @@
 import { AdminQuickActions } from "@/components/AdminQuickActions";
 import { DigitalBookUploader } from "@/components/DigitalBookUploader";
+import { LocalProductManager } from "@/components/LocalProductManager";
 import { PaymentOperations } from "@/components/PaymentOperations";
-import { ProductManagementHub } from "@/components/ProductManagementHub";
-import { ProductCreationFlow } from "@/components/ProductCreationFlow";
 import { StoreContentEditor } from "@/components/StoreContentEditor";
 import { StoreLayout } from "@/components/StoreLayout";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { ExternalLink, LayoutDashboard, LoaderCircle, Package, ShieldCheck, Truck } from "lucide-react";
+import { LayoutDashboard, LoaderCircle, Package, ShieldCheck, Truck } from "lucide-react";
 import { useMemo } from "react";
 
 const statuses = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
@@ -33,7 +32,7 @@ export default function Admin() {
   return <StoreLayout><div className="container py-10">
     <header className="flex flex-col gap-5 rounded-[32px] bg-[#173c37] p-7 text-white sm:flex-row sm:items-end sm:justify-between">
       <div><p className="text-sm text-[#f5c96a]">مركز التشغيل</p><h1 className="mt-2 text-3xl font-black">إدارة سوقك العربي</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-stone-300">ابدأ من الإجراءات السريعة، ثم عدّل محتوى المتجر أو وسائل الدفع أو الكتب والطلبات من الأقسام أدناه.</p></div>
-      <Button asChild className="rounded-xl bg-[#f5c96a] font-extrabold text-[#173c37] hover:bg-[#edbd53]"><a href="https://admin.shopify.com/" target="_blank" rel="noreferrer">إدارة المنتجات والمخزون <ExternalLink className="mr-2 h-4 w-4" /></a></Button>
+      <Button asChild className="rounded-xl bg-[#f5c96a] font-extrabold text-[#173c37] hover:bg-[#edbd53]"><a href="#local-products">إدارة المنتجات محليًا</a></Button>
     </header>
     <AdminQuickActions />
     <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -43,12 +42,11 @@ export default function Admin() {
       <div className="rounded-3xl bg-[#173c37] p-5 text-white"><p className="text-sm font-bold text-stone-300">إجمالي القيمة</p><strong className="mt-3 block text-3xl font-black text-[#f5c96a]">{metrics.revenue.toLocaleString("ar-EG")}</strong><p className="mt-2 text-xs text-stone-300">بالعملة المسجلة في الطلب</p></div>
     </section>
     <section className="mt-7 grid gap-5 md:grid-cols-3">
-      <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e3eee8] text-[#173c37]"><Package className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المنتجات والمخزون</h2><p className="mt-2 text-sm leading-7 text-stone-500">أضف أو عدّل أو احذف المنتجات والأسعار والصور والمخزون من مركز التاجر.</p></div>
+      <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e3eee8] text-[#173c37]"><Package className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المنتجات والمخزون</h2><p className="mt-2 text-sm leading-7 text-stone-500">أضف أو عدّل أو احذف المنتجات والأسعار والصور والمخزون من هذه البوابة مباشرة.</p></div>
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#f7ead6] text-[#9a5821]"><Truck className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">الطلبات والمدفوعات</h2><p className="mt-2 text-sm leading-7 text-stone-500">راجع إثباتات السداد وحدّث دورة التنفيذ بالحالات: معلق، مؤكد، مشحون، مكتمل.</p></div>
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#ebe8f5] text-[#50427b]"><LayoutDashboard className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المحتوى والكتب</h2><p className="mt-2 text-sm leading-7 text-stone-500">عدّل نصوص الواجهة ووسائل الدفع، ثم ارفع أو استبدل أو احذف ملفات الكتب الرقمية.</p></div>
     </section>
-    <ProductCreationFlow />
-    <ProductManagementHub />
+    <LocalProductManager />
     <StoreContentEditor />
     <div id="payment-operations" className="scroll-mt-24"><PaymentOperations /></div>
     <DigitalBookUploader />

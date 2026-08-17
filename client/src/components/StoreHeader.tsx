@@ -6,11 +6,11 @@ import { Link, useLocation } from "wouter";
 
 const links = [
   { label: "الرئيسية", href: "/" },
-  { label: "المنتجات", href: "/المنتجات" },
-  { label: "كتب", href: "/المنتجات?category=كتب" },
+  { label: "المتجر", href: "/متجر-مستقل" },
+  { label: "كتب", href: "/متجر-مستقل" },
   { label: "كتب رقمية", href: "/كتب-رقمية" },
-  { label: "ملابس", href: "/المنتجات?category=ملابس" },
-  { label: "أجهزة", href: "/المنتجات?category=أجهزة" },
+  { label: "ملابس", href: "/متجر-مستقل" },
+  { label: "أجهزة", href: "/متجر-مستقل" },
 ];
 
 export function StoreHeader() {
