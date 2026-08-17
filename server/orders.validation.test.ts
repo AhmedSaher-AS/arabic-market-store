@@ -22,6 +22,10 @@ describe("orderDraftSchema", () => {
     expect(orderDraftSchema.parse({ ...validDraft, paymentMethod: "فوري" }).paymentMethod).toBe("فوري");
   });
 
+  it("accepts WhatsApp as a supported communication payment method", () => {
+    expect(orderDraftSchema.parse({ ...validDraft, paymentMethod: "واتساب" }).paymentMethod).toBe("واتساب");
+  });
+
   it("rejects unsupported payment methods and incomplete addresses", () => {
     expect(orderDraftSchema.safeParse({ ...validDraft, paymentMethod: "تحويل غير معتمد" }).success).toBe(false);
     expect(orderDraftSchema.safeParse({ ...validDraft, shippingAddress: "قصير" }).success).toBe(false);

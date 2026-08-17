@@ -25,7 +25,7 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const paymentMethods = ["فودافون كاش", "فوري", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
+export const paymentMethods = ["فودافون كاش", "فوري", "واتساب", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
 export const orderStatuses = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
 
 export const orders = mysqlTable("orders", {
@@ -72,6 +72,18 @@ export const paymentSettings = mysqlTable("paymentSettings", {
   fawryMerchantLabel: varchar("fawryMerchantLabel", { length: 160 }).notNull(),
   fawryServiceCode: varchar("fawryServiceCode", { length: 64 }).notNull(),
   fawryInstructions: text("fawryInstructions").notNull(),
+  whatsappNumber: varchar("whatsappNumber", { length: 32 }).notNull().default("201146303129"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const storeSettings = mysqlTable("storeSettings", {
+  id: int("id").primaryKey(),
+  storeName: varchar("storeName", { length: 120 }).notNull(),
+  heroEyebrow: varchar("heroEyebrow", { length: 160 }).notNull(),
+  heroTitle: varchar("heroTitle", { length: 200 }).notNull(),
+  heroHighlight: varchar("heroHighlight", { length: 200 }).notNull(),
+  heroDescription: text("heroDescription").notNull(),
+  footerDescription: text("footerDescription").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -107,6 +119,14 @@ export const digitalEntitlements = mysqlTable("digitalEntitlements", {
   orderId: int("orderId").notNull().references(() => orders.id),
   grantedAt: timestamp("grantedAt").defaultNow().notNull(),
 }, table => [uniqueIndex("digitalEntitlements_orderId_book_unique").on(table.orderId, table.digitalBookId)]);
+
+export const readingProgress = mysqlTable("readingProgress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
+  lastPage: int("lastPage").notNull().default(1),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("readingProgress_user_book_unique").on(table.userId, table.digitalBookId)]);
 
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;

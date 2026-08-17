@@ -12,6 +12,7 @@ const paymentSettingsSchema = z.object({
   fawryMerchantLabel: z.string().trim().max(160),
   fawryServiceCode: z.string().trim().max(64),
   fawryInstructions: z.string().trim().max(1200),
+  whatsappNumber: z.string().trim().regex(/^\d{10,18}$/, "أدخل رقم واتساب دولي بالأرقام فقط.").max(32),
 });
 
 export const paymentsRouter = router({
@@ -24,6 +25,7 @@ export const paymentsRouter = router({
       fawryMerchantLabel: settings.fawryMerchantLabel,
       fawryServiceCode: settings.fawryServiceCode,
       fawryInstructions: settings.fawryInstructions,
+      whatsappNumber: settings.whatsappNumber,
     };
   }),
   adminSettings: adminProcedure.query(() => getPaymentSettings()),
@@ -37,7 +39,7 @@ export const paymentsRouter = router({
   })).mutation(async ({ ctx, input }) => {
     const order = await getOrderForUser(input.orderId, ctx.user.id);
     if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على الطلب." });
-    if (!["فودافون كاش", "فوري"].includes(order.paymentMethod)) {
+    if (!["فودافون كاش", "فوري", "واتساب"].includes(order.paymentMethod)) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "إثبات السداد متاح فقط للدفع اليدوي." });
     }
     const { content, contentType } = parseBase64Upload(input.dataUrl, ["image/jpeg", "image/png", "image/webp"], 8 * 1024 * 1024);

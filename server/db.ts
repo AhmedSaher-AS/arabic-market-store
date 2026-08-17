@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBooks, digitalEntitlements, InsertUser, orderItems, orders, Order, orderStatuses, paymentProofs, paymentSettings, users } from "../drizzle/schema";
+import { digitalBooks, digitalEntitlements, InsertUser, orderItems, orders, Order, orderStatuses, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -110,7 +110,7 @@ function createOrderNumber() {
 }
 
 function createPaymentReference(method: string, orderNumber: string) {
-  const prefix = method === "فودافون كاش" ? "VC" : method === "فوري" ? "FW" : "PAY";
+  const prefix = method === "فودافون كاش" ? "VC" : method === "فوري" ? "FW" : method === "واتساب" ? "WA" : "PAY";
   return `${prefix}-${orderNumber}`;
 }
 
@@ -192,6 +192,7 @@ type PaymentSettingsInput = {
   fawryMerchantLabel: string;
   fawryServiceCode: string;
   fawryInstructions: string;
+  whatsappNumber: string;
 };
 
 export async function getPaymentSettings() {
@@ -207,6 +208,7 @@ export async function getPaymentSettings() {
     fawryMerchantLabel: "",
     fawryServiceCode: "",
     fawryInstructions: "",
+    whatsappNumber: "201146303129",
   });
   const created = await db.select().from(paymentSettings).where(eq(paymentSettings.id, 1)).limit(1);
   if (!created[0]) throw new Error("تعذر إعداد وسائل الدفع.");
@@ -287,4 +289,53 @@ export async function getReadableBook(productHandle: string, userId: number, isA
   }
   const books = await db.select({ book: digitalBooks }).from(digitalEntitlements).innerJoin(digitalBooks, eq(digitalEntitlements.digitalBookId, digitalBooks.id)).where(and(eq(digitalEntitlements.userId, userId), eq(digitalBooks.productHandle, productHandle))).limit(1);
   return books[0]?.book;
+}
+
+export async function getReadingProgress(userId: number, digitalBookId: number) {
+  const db = await getDb();
+  if (!db) return 1;
+  const rows = await db.select().from(readingProgress).where(and(eq(readingProgress.userId, userId), eq(readingProgress.digitalBookId, digitalBookId))).limit(1);
+  return rows[0]?.lastPage ?? 1;
+}
+
+export async function saveReadingProgress(userId: number, digitalBookId: number, lastPage: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.insert(readingProgress).values({ userId, digitalBookId, lastPage }).onDuplicateKeyUpdate({ set: { lastPage } });
+}
+
+export type StoreSettingsInput = {
+  storeName: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroHighlight: string;
+  heroDescription: string;
+  footerDescription: string;
+};
+
+const defaultStoreSettings: StoreSettingsInput = {
+  storeName: "سوقك العربي",
+  heroEyebrow: "اختيارات منتقاة لك",
+  heroTitle: "كل ما تحتاجه،",
+  heroHighlight: "في مكان عربي واحد.",
+  heroDescription: "استكشف كتبًا ملهمة وملابس مختارة وأجهزة عملية عبر تجربة تسوق مصممة بوضوح وسهولة.",
+  footerDescription: "وجهة عربية هادئة لاكتشاف الكتب والملابس والأجهزة، بتجربة تسوق واضحة من الاختيار حتى الدفع.",
+};
+
+export async function getStoreSettings() {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  const existing = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+  if (existing[0]) return existing[0];
+  await db.insert(storeSettings).values({ id: 1, ...defaultStoreSettings });
+  const created = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+  if (!created[0]) throw new Error("تعذر إعداد محتوى المتجر.");
+  return created[0];
+}
+
+export async function updateStoreSettings(values: StoreSettingsInput) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.insert(storeSettings).values({ id: 1, ...values }).onDuplicateKeyUpdate({ set: values });
+  return getStoreSettings();
 }

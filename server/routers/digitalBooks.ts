@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { getReadableBook, listDigitalBooksForUser, upsertDigitalBook } from "../db";
+import { getReadableBook, getReadingProgress, listDigitalBooksForUser, saveReadingProgress, upsertDigitalBook } from "../db";
 import { parseBase64Upload, safeFileStem } from "../fileUpload";
 import { storageGetSignedUrl, storagePut } from "../storage";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
@@ -21,6 +21,13 @@ export const digitalBooksRouter = router({
   reader: protectedProcedure.input(z.object({ productHandle: z.string().min(1).max(255) })).query(async ({ ctx, input }) => {
     const book = await getReadableBook(input.productHandle, ctx.user.id, ctx.user.role === "admin");
     if (!book) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية قراءة هذا الكتاب حاليًا." });
-    return { title: book.title, pdfUrl: await storageGetSignedUrl(book.pdfKey) };
+    const signedUrl = await storageGetSignedUrl(book.pdfKey);
+    return { id: book.id, title: book.title, pdfUrl: signedUrl, downloadUrl: signedUrl, lastPage: await getReadingProgress(ctx.user.id, book.id) };
+  }),
+  saveProgress: protectedProcedure.input(z.object({ productHandle: z.string().min(1).max(255), lastPage: z.number().int().min(1).max(100000) })).mutation(async ({ ctx, input }) => {
+    const book = await getReadableBook(input.productHandle, ctx.user.id, ctx.user.role === "admin");
+    if (!book) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية حفظ تقدم هذا الكتاب." });
+    await saveReadingProgress(ctx.user.id, book.id, input.lastPage);
+    return { success: true, lastPage: input.lastPage } as const;
   }),
 });

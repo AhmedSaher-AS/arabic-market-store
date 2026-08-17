@@ -29,6 +29,20 @@
       "when": 1786997128904,
       "tag": "0003_outstanding_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786998187223,
+      "tag": "0004_freezing_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786998570895,
+      "tag": "0005_sour_hellcat",
+      "breakpoints": true
     }
   ]
 }

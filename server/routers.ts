@@ -6,6 +6,7 @@ import { commerceRouter } from "./routers/commerce";
 import { digitalBooksRouter } from "./routers/digitalBooks";
 import { ordersRouter } from "./routers/orders";
 import { paymentsRouter } from "./routers/payments";
+import { storeSettingsRouter } from "./routers/storeSettings";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -24,6 +25,7 @@ export const appRouter = router({
   orders: ordersRouter,
   payments: paymentsRouter,
   digitalBooks: digitalBooksRouter,
+  storeSettings: storeSettingsRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({
