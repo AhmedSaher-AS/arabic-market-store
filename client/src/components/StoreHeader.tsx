@@ -6,11 +6,9 @@ import { Link, useLocation } from "wouter";
 
 const links = [
   { label: "الرئيسية", href: "/" },
-  { label: "المتجر", href: "/متجر-مستقل" },
-  { label: "كتب", href: "/متجر-مستقل" },
   { label: "كتب رقمية", href: "/كتب-رقمية" },
-  { label: "ملابس", href: "/متجر-مستقل" },
-  { label: "أجهزة", href: "/متجر-مستقل" },
+  { label: "مكتبتي", href: "/مكتبتي" },
+  { label: "المتجر المتنوع", href: "/متجر-مستقل" },
 ];
 
 export function StoreHeader() {
@@ -23,7 +21,7 @@ export function StoreHeader() {
       <div className="container flex h-[76px] items-center justify-between gap-4">
         <Link href="/" className="group flex items-center gap-3" aria-label="سوقك العربي - الرئيسية">
           <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#173c37] text-lg font-black text-[#f5c96a] shadow-lg shadow-[#173c37]/15 transition-transform duration-200 group-hover:scale-105">س</span>
-          <span className="text-lg font-extrabold tracking-tight text-[#173c37]">سوقك العربي</span>
+          <span className="text-lg font-extrabold tracking-tight text-[#173c37]">سوقك العربي <span className="hidden text-xs font-bold text-[#b76f2c] xl:inline">| مكتبة رقمية</span></span>
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex" aria-label="التنقل الرئيسي">
