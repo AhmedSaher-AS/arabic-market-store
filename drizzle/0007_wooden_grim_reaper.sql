@@ -1,0 +1,1 @@
+ALTER TABLE `digitalBooks` MODIFY COLUMN `description` varchar(5000) NOT NULL DEFAULT '';

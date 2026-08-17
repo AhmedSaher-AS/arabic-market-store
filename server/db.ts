@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBooks, digitalEntitlements, InsertUser, orderItems, orders, Order, orderStatuses, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
+import { digitalBooks, digitalEntitlements, InsertUser, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -167,6 +167,47 @@ export async function listOrdersForUser(userId: number) {
   return db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
 }
 
+export async function createLocalDigitalBookOrder(input: { userId: number; bookId: number; customerName: string; customerPhone: string; paymentMethod: (typeof paymentMethods)[number] }): Promise<Order> {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  const books = await db.select().from(digitalBooks).where(and(eq(digitalBooks.id, input.bookId), eq(digitalBooks.isAvailable, 1))).limit(1);
+  const book = books[0];
+  if (!book || Number(book.price) <= 0) throw new Error("هذا الكتاب غير متاح للشراء حاليًا.");
+  return db.transaction(async tx => {
+    const orderNumber = createOrderNumber();
+    const inserted = await tx.insert(orders).values({
+      orderNumber,
+      userId: input.userId,
+      sourceCartId: `digital-book-${book.id}-${Date.now()}`,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      shippingAddress: "كتاب رقمي — لا يحتاج إلى شحن",
+      country: "رقمي",
+      city: "رقمي",
+      paymentMethod: input.paymentMethod,
+      paymentReference: createPaymentReference(input.paymentMethod, orderNumber),
+      total: Number(book.price).toFixed(2),
+      currencyCode: book.currencyCode,
+      checkoutUrl: "",
+    });
+    const orderId = Number(inserted[0].insertId);
+    await tx.insert(orderItems).values({
+      orderId,
+      variantId: `local-digital-book-${book.id}`,
+      productHandle: book.productHandle,
+      productTitle: book.title,
+      variantTitle: "كتاب PDF رقمي",
+      imageUrl: null,
+      unitPrice: Number(book.price).toFixed(2),
+      quantity: 1,
+      lineTotal: Number(book.price).toFixed(2),
+    });
+    const created = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!created[0]) throw new Error("تعذر إنشاء طلب الكتاب الرقمي.");
+    return created[0];
+  });
+}
+
 export async function listOrderTrackingForUser(userId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -286,10 +327,34 @@ export async function reviewPaymentProof(proofId: number, accepted: boolean, rev
   });
 }
 
-export async function upsertDigitalBook(input: typeof digitalBooks.$inferInsert) {
+export type DigitalBookInput = {
+  productHandle: string;
+  title: string;
+  description: string;
+  price: string;
+  currencyCode: string;
+  isAvailable: number;
+  fileName: string;
+  pdfKey: string;
+  pdfUrl: string;
+};
+
+export async function upsertDigitalBook(input: DigitalBookInput) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
-  await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: { title: input.title, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl } });
+  await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: { title: input.title, description: input.description, price: input.price, currencyCode: input.currencyCode, isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl } });
+}
+
+export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "price" | "currencyCode" | "isAvailable">) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.update(digitalBooks).set(input).where(eq(digitalBooks.id, bookId));
+}
+
+export async function listAvailableDigitalBooks() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(digitalBooks).where(eq(digitalBooks.isAvailable, 1)).orderBy(desc(digitalBooks.updatedAt));
 }
 
 export async function listAllDigitalBooks() {

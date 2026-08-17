@@ -8,6 +8,7 @@ const links = [
   { label: "الرئيسية", href: "/" },
   { label: "المنتجات", href: "/المنتجات" },
   { label: "كتب", href: "/المنتجات?category=كتب" },
+  { label: "كتب رقمية", href: "/كتب-رقمية" },
   { label: "ملابس", href: "/المنتجات?category=ملابس" },
   { label: "أجهزة", href: "/المنتجات?category=أجهزة" },
 ];
@@ -62,4 +63,3 @@ export function StoreHeader() {
     </header>
   );
 }
-

@@ -11,6 +11,7 @@ import Catalog from "./pages/Catalog";
 import Checkout from "./pages/Checkout";
 import DigitalLibrary from "./pages/DigitalLibrary";
 import Home from "./pages/Home";
+import LocalDigitalBooks from "./pages/LocalDigitalBooks";
 import OrderTracking from "./pages/OrderTracking";
 import PaymentProof from "./pages/PaymentProof";
 import ProductDetails from "./pages/ProductDetails";
@@ -20,6 +21,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/كتب-رقمية"} component={LocalDigitalBooks} />
       <Route path={"/المنتجات"} component={Catalog} />
       <Route path={"/المنتجات/:handle"} component={ProductDetails} />
       <Route path={"/إتمام-الطلب"} component={Checkout} />

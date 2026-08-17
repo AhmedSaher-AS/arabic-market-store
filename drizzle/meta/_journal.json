@@ -43,6 +43,20 @@
       "when": 1786998570895,
       "tag": "0005_sour_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787002531025,
+      "tag": "0006_red_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1787002603966,
+      "tag": "0007_wooden_grim_reaper",
+      "breakpoints": true
     }
   ]
 }
