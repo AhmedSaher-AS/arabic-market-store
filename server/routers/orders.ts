@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { orderStatuses, paymentMethods } from "../../drizzle/schema";
-import { createOrderFromCart, listAllOrders, listOrdersForUser, markOwnerNotified, updateOrderStatus } from "../db";
+import { createOrderFromCart, listAllOrders, listOrderTrackingForUser, listOrdersForUser, markOwnerNotified, updateOrderStatus } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { getCart } from "../_core/shopify";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
@@ -36,6 +36,7 @@ export const ordersRouter = router({
     return order;
   }),
   mine: protectedProcedure.query(({ ctx }) => listOrdersForUser(ctx.user.id)),
+  tracking: protectedProcedure.query(({ ctx }) => listOrderTrackingForUser(ctx.user.id)),
   list: adminProcedure.query(() => listAllOrders()),
   updateStatus: adminProcedure
     .input(z.object({ orderId: z.number().int().positive(), status: z.enum(orderStatuses) }))

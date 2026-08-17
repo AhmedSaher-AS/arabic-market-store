@@ -167,6 +167,24 @@ export async function listOrdersForUser(userId: number) {
   return db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
 }
 
+export async function listOrderTrackingForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const [userOrders, proofs, grantedBooks] = await Promise.all([
+    db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt)),
+    db.select().from(paymentProofs).where(eq(paymentProofs.userId, userId)),
+    db.select({ entitlement: digitalEntitlements, book: digitalBooks }).from(digitalEntitlements).innerJoin(digitalBooks, eq(digitalEntitlements.digitalBookId, digitalBooks.id)).where(eq(digitalEntitlements.userId, userId)),
+  ]);
+  const proofsByOrder = new Map(proofs.map(proof => [proof.orderId, proof]));
+  const booksByOrder = new Map<number, typeof grantedBooks>();
+  grantedBooks.forEach(item => {
+    const current = booksByOrder.get(item.entitlement.orderId) ?? [];
+    current.push(item);
+    booksByOrder.set(item.entitlement.orderId, current);
+  });
+  return userOrders.map(order => ({ order, proof: proofsByOrder.get(order.id) ?? null, books: booksByOrder.get(order.id) ?? [] }));
+}
+
 export async function listAllOrders() {
   const db = await getDb();
   if (!db) return [];
