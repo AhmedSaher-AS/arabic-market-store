@@ -31,7 +31,7 @@ describe("digital payments access control", () => {
     await expect(callerFor(null).digitalBooks.reader({ productHandle: "secure-book" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("prevents a customer from uploading books or reviewing payment proofs", async () => {
+  it("prevents a customer from uploading or deleting books and reviewing payment proofs", async () => {
     const caller = callerFor(customer);
     await expect(caller.digitalBooks.upload({
       productHandle: "secure-book",
@@ -39,6 +39,7 @@ describe("digital payments access control", () => {
       fileName: "book.pdf",
       dataUrl: "data:application/pdf;base64,aGVsbG8=",
     })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.digitalBooks.remove({ bookId: 1, confirmed: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.payments.reviewProof({ proofId: 1, accepted: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

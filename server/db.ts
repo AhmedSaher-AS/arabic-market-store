@@ -292,6 +292,25 @@ export async function upsertDigitalBook(input: typeof digitalBooks.$inferInsert)
   await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: { title: input.title, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl } });
 }
 
+export async function listAllDigitalBooks() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(digitalBooks).orderBy(desc(digitalBooks.updatedAt));
+}
+
+/** يحذف سجل الكتاب وكل صلاحياته ومواضع القراءة؛ يصبح ملف التخزين غير مرجعي وغير قابل للوصول من التطبيق. */
+export async function removeDigitalBook(bookId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.transaction(async tx => {
+    const existing = await tx.select().from(digitalBooks).where(eq(digitalBooks.id, bookId)).limit(1);
+    if (!existing[0]) throw new Error("لم يتم العثور على ملف الكتاب.");
+    await tx.delete(readingProgress).where(eq(readingProgress.digitalBookId, bookId));
+    await tx.delete(digitalEntitlements).where(eq(digitalEntitlements.digitalBookId, bookId));
+    await tx.delete(digitalBooks).where(eq(digitalBooks.id, bookId));
+  });
+}
+
 export async function listDigitalBooksForUser(userId: number) {
   const db = await getDb();
   if (!db) return [];
