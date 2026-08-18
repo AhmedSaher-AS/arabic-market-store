@@ -111,16 +111,33 @@ export const digitalBooks = mysqlTable("digitalBooks", {
   productHandle: varchar("productHandle", { length: 255 }).notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
   description: varchar("description", { length: 5000 }).notNull().default(""),
+  shortDescription: varchar("shortDescription", { length: 600 }).notNull().default(""),
+  author: varchar("author", { length: 255 }).notNull().default(""),
+  language: varchar("language", { length: 64 }).notNull().default("العربية"),
+  pageCount: int("pageCount").notNull().default(0),
+  category: varchar("category", { length: 120 }).notNull().default("عام"),
+  tags: varchar("tags", { length: 1000 }).notNull().default(""),
+  tableOfContents: text("tableOfContents"),
   price: decimal("price", { precision: 12, scale: 2 }).notNull().default("0.00"),
   currencyCode: varchar("currencyCode", { length: 8 }).notNull().default("EGP"),
   isAvailable: int("isAvailable").notNull().default(1),
   fileName: varchar("fileName", { length: 255 }).notNull(),
   pdfKey: varchar("pdfKey", { length: 512 }).notNull(),
   pdfUrl: text("pdfUrl").notNull(),
+  sampleKey: varchar("sampleKey", { length: 512 }),
+  sampleUrl: text("sampleUrl"),
   coverKey: varchar("coverKey", { length: 512 }),
   coverUrl: text("coverUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const digitalBookEvents = mysqlTable("digitalBookEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
+  userId: int("userId").references(() => users.id),
+  eventType: mysqlEnum("eventType", ["عرض", "بدء طلب", "سداد معتمد"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export const localProducts = mysqlTable("localProducts", {

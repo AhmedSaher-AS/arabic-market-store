@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import Catalog from "./pages/Catalog";
 import Checkout from "./pages/Checkout";
 import DigitalLibrary from "./pages/DigitalLibrary";
+import DigitalBookDetails from "./pages/DigitalBookDetails";
 import Home from "./pages/Home";
 import HelpCenter from "./pages/HelpCenter";
 import LocalDigitalBooks from "./pages/LocalDigitalBooks";
@@ -27,6 +28,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/كتب-رقمية/:handle"} component={DigitalBookDetails} />
       <Route path={"/كتب-رقمية"} component={LocalDigitalBooks} />
       <Route path={"/متجر-مستقل"} component={LocalProducts} />
       <Route path={"/بحث"} component={SearchPage} />
@@ -35,6 +37,9 @@ function Router() {
       <Route path={"/سياسة-الشحن"} component={StorePolicy} />
       <Route path={"/الاستبدال-والاسترجاع"} component={StorePolicy} />
       <Route path={"/الخصوصية"} component={StorePolicy} />
+      <Route path={"/شروط-الاستخدام"} component={StorePolicy} />
+      <Route path={"/سياسة-المنتجات-الرقمية"} component={StorePolicy} />
+      <Route path={"/من-نحن"} component={StorePolicy} />
       <Route path={"/ضمان-المتجر"} component={StoreTrust} />
       <Route path={"/المنتجات"} component={Catalog} />
       <Route path={"/المنتجات/:handle"} component={ProductDetails} />

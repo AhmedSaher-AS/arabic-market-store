@@ -1,6 +1,6 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBookReviews, digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
+import { digitalBookEvents, digitalBookReviews, digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -172,9 +172,10 @@ export async function createLocalDigitalBookOrder(input: { userId: number; bookI
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
   const books = await db.select().from(digitalBooks).where(and(eq(digitalBooks.id, input.bookId), eq(digitalBooks.isAvailable, 1))).limit(1);
   const book = books[0];
-  if (!book || Number(book.price) <= 0) throw new Error("هذا الكتاب غير متاح للشراء حاليًا.");
+  if (!book || Number(book.price) < 0) throw new Error("هذا الكتاب غير متاح للشراء حاليًا.");
   return db.transaction(async tx => {
     const orderNumber = createOrderNumber();
+    const isFree = Number(book.price) === 0;
     const inserted = await tx.insert(orders).values({
       orderNumber,
       userId: input.userId,
@@ -185,10 +186,12 @@ export async function createLocalDigitalBookOrder(input: { userId: number; bookI
       country: "رقمي",
       city: "رقمي",
       paymentMethod: input.paymentMethod,
-      paymentReference: createPaymentReference(input.paymentMethod, orderNumber),
+      paymentReference: isFree ? `FREE-${orderNumber}` : createPaymentReference(input.paymentMethod, orderNumber),
       total: Number(book.price).toFixed(2),
       currencyCode: book.currencyCode,
       checkoutUrl: "",
+      paymentStatus: isFree ? "مدفوع" : "بانتظار الدفع",
+      status: isFree ? "مؤكد" : "معلق",
     });
     const orderId = Number(inserted[0].insertId);
     await tx.insert(orderItems).values({
@@ -202,6 +205,10 @@ export async function createLocalDigitalBookOrder(input: { userId: number; bookI
       quantity: 1,
       lineTotal: Number(book.price).toFixed(2),
     });
+    if (isFree) {
+      await tx.insert(digitalEntitlements).values({ userId: input.userId, digitalBookId: book.id, orderId }).onDuplicateKeyUpdate({ set: { userId: input.userId } });
+      await tx.insert(digitalBookEvents).values({ digitalBookId: book.id, userId: input.userId, eventType: "سداد معتمد" });
+    }
     const created = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1);
     if (!created[0]) throw new Error("تعذر إنشاء طلب الكتاب الرقمي.");
     return created[0];
@@ -323,6 +330,7 @@ export async function reviewPaymentProof(proofId: number, accepted: boolean, rev
     const orderedBooks = await tx.select({ bookId: digitalBooks.id }).from(orderItems).innerJoin(digitalBooks, eq(orderItems.productHandle, digitalBooks.productHandle)).where(eq(orderItems.orderId, proof.orderId));
     if (orderedBooks.length) {
       await tx.insert(digitalEntitlements).values(orderedBooks.map(book => ({ userId: proof.userId, digitalBookId: book.bookId, orderId: proof.orderId }))).onDuplicateKeyUpdate({ set: { userId: proof.userId } });
+      await tx.insert(digitalBookEvents).values(orderedBooks.map(book => ({ digitalBookId: book.bookId, userId: proof.userId, eventType: "سداد معتمد" as const })));
     }
   });
 }
@@ -331,12 +339,21 @@ export type DigitalBookInput = {
   productHandle: string;
   title: string;
   description: string;
+  shortDescription: string;
+  author: string;
+  language: string;
+  pageCount: number;
+  category: string;
+  tags: string;
+  tableOfContents?: string | null;
   price: string;
   currencyCode: string;
   isAvailable: number;
   fileName: string;
   pdfKey: string;
   pdfUrl: string;
+  sampleKey?: string | null;
+  sampleUrl?: string | null;
   coverKey?: string | null;
   coverUrl?: string | null;
 };
@@ -344,11 +361,18 @@ export type DigitalBookInput = {
 export async function upsertDigitalBook(input: DigitalBookInput) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
-  const updates = { title: input.title, description: input.description, price: input.price, currencyCode: input.currencyCode, isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl, ...(input.coverKey !== undefined ? { coverKey: input.coverKey, coverUrl: input.coverUrl ?? null } : {}) };
+  const updates = {
+    title: input.title, description: input.description, shortDescription: input.shortDescription, author: input.author,
+    language: input.language, pageCount: input.pageCount, category: input.category, tags: input.tags,
+    tableOfContents: input.tableOfContents ?? null, price: input.price, currencyCode: input.currencyCode,
+    isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl,
+    ...(input.sampleKey !== undefined ? { sampleKey: input.sampleKey, sampleUrl: input.sampleUrl ?? null } : {}),
+    ...(input.coverKey !== undefined ? { coverKey: input.coverKey, coverUrl: input.coverUrl ?? null } : {}),
+  };
   await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: updates });
 }
 
-export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "price" | "currencyCode" | "isAvailable">) {
+export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "shortDescription" | "author" | "language" | "pageCount" | "category" | "tags" | "tableOfContents" | "price" | "currencyCode" | "isAvailable">) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
   await db.update(digitalBooks).set(input).where(eq(digitalBooks.id, bookId));
@@ -360,10 +384,48 @@ export async function updateDigitalBookCover(bookId: number, cover: { coverKey: 
   await db.update(digitalBooks).set(cover).where(eq(digitalBooks.id, bookId));
 }
 
+export async function updateDigitalBookSample(bookId: number, sample: { sampleKey: string | null; sampleUrl: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.update(digitalBooks).set(sample).where(eq(digitalBooks.id, bookId));
+}
+
 export async function listAvailableDigitalBooks() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(digitalBooks).where(eq(digitalBooks.isAvailable, 1)).orderBy(desc(digitalBooks.updatedAt));
+  const [books, ratings] = await Promise.all([
+    db.select().from(digitalBooks).where(eq(digitalBooks.isAvailable, 1)).orderBy(desc(digitalBooks.updatedAt)),
+    db.select({ digitalBookId: digitalBookReviews.digitalBookId, rating: digitalBookReviews.rating }).from(digitalBookReviews),
+  ]);
+  const ratingsByBook = new Map<number, { total: number; sum: number }>();
+  ratings.forEach(rating => {
+    const current = ratingsByBook.get(rating.digitalBookId) ?? { total: 0, sum: 0 };
+    ratingsByBook.set(rating.digitalBookId, { total: current.total + 1, sum: current.sum + rating.rating });
+  });
+  return books.map(book => {
+    const summary = ratingsByBook.get(book.id);
+    return { ...book, reviewCount: summary?.total ?? 0, averageRating: summary ? Number((summary.sum / summary.total).toFixed(1)) : 0 };
+  });
+}
+
+export async function getAvailableDigitalBookByHandle(productHandle: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const books = await db.select().from(digitalBooks).where(and(eq(digitalBooks.productHandle, productHandle), eq(digitalBooks.isAvailable, 1))).limit(1);
+  return books[0];
+}
+
+export async function listRelatedDigitalBooks(bookId: number, category: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const books = await db.select().from(digitalBooks).where(and(eq(digitalBooks.category, category), eq(digitalBooks.isAvailable, 1))).orderBy(desc(digitalBooks.updatedAt)).limit(5);
+  return books.filter(book => book.id !== bookId).slice(0, 3);
+}
+
+export async function recordDigitalBookEvent(input: { digitalBookId: number; userId?: number; eventType: "عرض" | "بدء طلب" | "سداد معتمد" }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(digitalBookEvents).values({ digitalBookId: input.digitalBookId, userId: input.userId ?? null, eventType: input.eventType });
 }
 
 export type DigitalBookReviewInput = {
@@ -514,6 +576,7 @@ export async function removeDigitalBook(bookId: number) {
     if (!existing[0]) throw new Error("لم يتم العثور على ملف الكتاب.");
     await tx.delete(readingProgress).where(eq(readingProgress.digitalBookId, bookId));
     await tx.delete(digitalBookReviews).where(eq(digitalBookReviews.digitalBookId, bookId));
+    await tx.delete(digitalBookEvents).where(eq(digitalBookEvents.digitalBookId, bookId));
     await tx.delete(digitalEntitlements).where(eq(digitalEntitlements.digitalBookId, bookId));
     await tx.delete(digitalBooks).where(eq(digitalBooks.id, bookId));
   });

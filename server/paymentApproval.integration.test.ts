@@ -6,13 +6,17 @@ describe("reviewPaymentProof", () => {
 
   it("marks an approved payment as paid and grants the purchased digital book", async () => {
     const updates: Array<Record<string, unknown>> = [];
+    const inserts: unknown[] = [];
     let granted: unknown = null;
     const proof = { id: 4, orderId: 32, userId: 9 };
 
     const tx = {
       update: () => ({ set: (values: Record<string, unknown>) => ({ where: async () => { updates.push(values); } }) }),
       select: () => ({ from: () => ({ innerJoin: () => ({ where: async () => [{ bookId: 18 }] }) }) }),
-      insert: () => ({ values: (values: unknown) => ({ onDuplicateKeyUpdate: async () => { granted = values; } }) }),
+      insert: () => ({ values: (values: unknown) => {
+        inserts.push(values);
+        return { onDuplicateKeyUpdate: async () => { granted = values; } };
+      } }),
     };
     const fakeDb = {
       select: () => ({ from: () => ({ where: () => ({ limit: async () => [proof] }) }) }),
@@ -25,5 +29,6 @@ describe("reviewPaymentProof", () => {
     expect(updates).toContainEqual(expect.objectContaining({ status: "مقبول" }));
     expect(updates).toContainEqual(expect.objectContaining({ paymentStatus: "مدفوع", status: "مؤكد" }));
     expect(granted).toEqual([{ userId: 9, digitalBookId: 18, orderId: 32 }]);
+    expect(inserts).toContainEqual([{ digitalBookId: 18, userId: 9, eventType: "سداد معتمد" }]);
   });
 });
