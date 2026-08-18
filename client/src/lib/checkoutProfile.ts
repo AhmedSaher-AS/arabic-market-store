@@ -1,9 +1,21 @@
 export const CHECKOUT_PROFILE_STORAGE_KEY = "arabic-market-checkout-profile-v1";
+export const paymentMethods = ["فودافون كاش", "فوري", "واتساب", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
+
+export type PaymentMethod = (typeof paymentMethods)[number];
 
 export type CheckoutProfile = {
   customerName: string;
   customerPhone: string;
+  paymentMethod: PaymentMethod;
 };
+
+const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+
+export function normalizeEgyptianMobile(value: string): string | null {
+  const digits = value.replace(/[٠-٩]/g, digit => String(arabicDigits.indexOf(digit))).replace(/\D/g, "");
+  const local = digits.startsWith("0020") ? `0${digits.slice(4)}` : digits.startsWith("20") ? `0${digits.slice(2)}` : digits;
+  return /^01[0125]\d{8}$/.test(local) ? local : null;
+}
 
 export function parseCheckoutProfile(raw: string | null): CheckoutProfile | null {
   if (!raw) return null;
@@ -13,9 +25,10 @@ export function parseCheckoutProfile(raw: string | null): CheckoutProfile | null
     const candidate = value as Partial<CheckoutProfile>;
     if (typeof candidate.customerName !== "string" || typeof candidate.customerPhone !== "string") return null;
     const customerName = candidate.customerName.trim();
-    const customerPhone = candidate.customerPhone.trim();
+    const customerPhone = normalizeEgyptianMobile(candidate.customerPhone);
     if (!customerName || !customerPhone) return null;
-    return { customerName, customerPhone };
+    const paymentMethod = typeof candidate.paymentMethod === "string" && paymentMethods.includes(candidate.paymentMethod as PaymentMethod) ? candidate.paymentMethod as PaymentMethod : "فودافون كاش";
+    return { customerName, customerPhone, paymentMethod };
   } catch {
     return null;
   }

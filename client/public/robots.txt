@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /المدير
+Disallow: /حسابي
+Disallow: /طلباتي
+Disallow: /مكتبتي
+Disallow: /إثبات-الدفع
+Sitemap: https://arabicshop-p2xmxzpy.manus.space/sitemap.xml
