@@ -27,7 +27,7 @@ describe("reviewPaymentProof", () => {
     await reviewPaymentProof(4, true, "تمت المطابقة");
 
     expect(updates).toContainEqual(expect.objectContaining({ status: "مقبول" }));
-    expect(updates).toContainEqual(expect.objectContaining({ paymentStatus: "مدفوع", status: "مؤكد" }));
+    expect(updates).toContainEqual(expect.objectContaining({ paymentStatus: "مدفوع", status: "مكتمل" }));
     expect(granted).toEqual([{ userId: 9, digitalBookId: 18, orderId: 32 }]);
     expect(inserts).toContainEqual([{ digitalBookId: 18, userId: 9, eventType: "سداد معتمد" }]);
   });

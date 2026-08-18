@@ -191,7 +191,8 @@ export async function createLocalDigitalBookOrder(input: { userId: number; bookI
       currencyCode: book.currencyCode,
       checkoutUrl: "",
       paymentStatus: isFree ? "مدفوع" : "بانتظار الدفع",
-      status: isFree ? "مؤكد" : "معلق",
+      // الكتاب الرقمي لا يحتاج إلى شحن أو تنفيذ يدوي؛ تبقى مراجعة السداد منفصلة في paymentStatus.
+      status: "مكتمل",
     });
     const orderId = Number(inserted[0].insertId);
     await tx.insert(orderItems).values({
@@ -324,10 +325,10 @@ export async function reviewPaymentProof(proofId: number, accepted: boolean, rev
   const proof = proofs[0];
   if (!proof) throw new Error("لم يتم العثور على إثبات السداد.");
   await db.transaction(async tx => {
-    await tx.update(paymentProofs).set({ status: accepted ? "مقبول" : "مرفوض", reviewNote: reviewNote || null, reviewedAt: new Date() }).where(eq(paymentProofs.id, proofId));
-    await tx.update(orders).set({ paymentStatus: accepted ? "مدفوع" : "فشل", status: accepted ? "مؤكد" : "معلق" }).where(eq(orders.id, proof.orderId));
-    if (!accepted) return;
     const orderedBooks = await tx.select({ bookId: digitalBooks.id }).from(orderItems).innerJoin(digitalBooks, eq(orderItems.productHandle, digitalBooks.productHandle)).where(eq(orderItems.orderId, proof.orderId));
+    await tx.update(paymentProofs).set({ status: accepted ? "مقبول" : "مرفوض", reviewNote: reviewNote || null, reviewedAt: new Date() }).where(eq(paymentProofs.id, proofId));
+    await tx.update(orders).set({ paymentStatus: accepted ? "مدفوع" : "فشل", status: orderedBooks.length ? "مكتمل" : accepted ? "مؤكد" : "معلق" }).where(eq(orders.id, proof.orderId));
+    if (!accepted) return;
     if (orderedBooks.length) {
       await tx.insert(digitalEntitlements).values(orderedBooks.map(book => ({ userId: proof.userId, digitalBookId: book.bookId, orderId: proof.orderId }))).onDuplicateKeyUpdate({ set: { userId: proof.userId } });
       await tx.insert(digitalBookEvents).values(orderedBooks.map(book => ({ digitalBookId: book.bookId, userId: proof.userId, eventType: "سداد معتمد" as const })));
