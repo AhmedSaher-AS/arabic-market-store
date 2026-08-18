@@ -199,6 +199,17 @@ export const digitalEntitlements = mysqlTable("digitalEntitlements", {
   grantedAt: timestamp("grantedAt").defaultNow().notNull(),
 }, table => [uniqueIndex("digitalEntitlements_orderId_book_unique").on(table.orderId, table.digitalBookId)]);
 
+export const digitalBookReviews = mysqlTable("digitalBookReviews", {
+  id: int("id").autoincrement().primaryKey(),
+  digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
+  userId: int("userId").notNull().references(() => users.id),
+  rating: int("rating").notNull(),
+  title: varchar("title", { length: 160 }).notNull().default(""),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("digitalBookReviews_user_book_unique").on(table.userId, table.digitalBookId)]);
+
 export const readingProgress = mysqlTable("readingProgress", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id),

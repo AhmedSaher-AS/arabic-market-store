@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { commerceRouter } from "./routers/commerce";
 import { digitalBooksRouter } from "./routers/digitalBooks";
+import { digitalReviewsRouter } from "./routers/digitalReviews";
 import { localProductsRouter } from "./routers/localProducts";
 import { ordersRouter } from "./routers/orders";
 import { paymentsRouter } from "./routers/payments";
@@ -28,6 +29,7 @@ export const appRouter = router({
   orders: ordersRouter,
   payments: paymentsRouter,
   digitalBooks: digitalBooksRouter,
+  digitalReviews: digitalReviewsRouter,
   localProducts: localProductsRouter,
   storeSettings: storeSettingsRouter,
   storeBasics: storeBasicsRouter,

@@ -1,6 +1,6 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
+import { digitalBookReviews, digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
 
@@ -357,6 +357,53 @@ export async function listAvailableDigitalBooks() {
   return db.select().from(digitalBooks).where(eq(digitalBooks.isAvailable, 1)).orderBy(desc(digitalBooks.updatedAt));
 }
 
+export type DigitalBookReviewInput = {
+  digitalBookId: number;
+  rating: number;
+  title: string;
+  body: string;
+};
+
+export async function canUserReviewDigitalBook(userId: number, digitalBookId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const entitlement = await db.select({ id: digitalEntitlements.id }).from(digitalEntitlements)
+    .where(and(eq(digitalEntitlements.userId, userId), eq(digitalEntitlements.digitalBookId, digitalBookId))).limit(1);
+  return Boolean(entitlement[0]);
+}
+
+export async function getDigitalBookReviewSummary(digitalBookId: number) {
+  const db = await getDb();
+  if (!db) return { reviews: [], total: 0, averageRating: 0 };
+  const reviews = await db.select({
+    id: digitalBookReviews.id,
+    rating: digitalBookReviews.rating,
+    title: digitalBookReviews.title,
+    body: digitalBookReviews.body,
+    createdAt: digitalBookReviews.createdAt,
+    updatedAt: digitalBookReviews.updatedAt,
+  }).from(digitalBookReviews).where(eq(digitalBookReviews.digitalBookId, digitalBookId)).orderBy(desc(digitalBookReviews.updatedAt));
+  const total = reviews.length;
+  const averageRating = total ? Number((reviews.reduce((sum, review) => sum + review.rating, 0) / total).toFixed(1)) : 0;
+  return { reviews: reviews.map(review => ({ ...review, readerLabel: "قارئ موثّق" })), total, averageRating };
+}
+
+export async function getUserDigitalBookReview(userId: number, digitalBookId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(digitalBookReviews)
+    .where(and(eq(digitalBookReviews.userId, userId), eq(digitalBookReviews.digitalBookId, digitalBookId))).limit(1);
+  return rows[0];
+}
+
+export async function upsertDigitalBookReview(userId: number, input: DigitalBookReviewInput) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  if (!(await canUserReviewDigitalBook(userId, input.digitalBookId))) throw new Error("لا يمكنك مراجعة هذا الكتاب قبل امتلاك صلاحية قراءته.");
+  await db.insert(digitalBookReviews).values({ userId, ...input }).onDuplicateKeyUpdate({ set: { rating: input.rating, title: input.title, body: input.body } });
+  return getUserDigitalBookReview(userId, input.digitalBookId);
+}
+
 export type LocalProductInput = {
   handle: string;
   title: string;
@@ -457,6 +504,7 @@ export async function removeDigitalBook(bookId: number) {
     const existing = await tx.select().from(digitalBooks).where(eq(digitalBooks.id, bookId)).limit(1);
     if (!existing[0]) throw new Error("لم يتم العثور على ملف الكتاب.");
     await tx.delete(readingProgress).where(eq(readingProgress.digitalBookId, bookId));
+    await tx.delete(digitalBookReviews).where(eq(digitalBookReviews.digitalBookId, bookId));
     await tx.delete(digitalEntitlements).where(eq(digitalEntitlements.digitalBookId, bookId));
     await tx.delete(digitalBooks).where(eq(digitalBooks.id, bookId));
   });
