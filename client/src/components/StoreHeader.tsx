@@ -1,4 +1,5 @@
 import { useCart } from "@/contexts/CartContext";
+import { BookAutocomplete } from "@/components/BookAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
@@ -33,7 +34,8 @@ export function StoreHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/بحث" aria-label="البحث في المتجر" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid"><Search className="h-5 w-5" /></Link>
+          <BookAutocomplete className="hidden w-[260px] xl:block" />
+          <Link href="/بحث" aria-label="البحث في المتجر" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid xl:hidden"><Search className="h-5 w-5" /></Link>
           <Link href="/المفضلة" aria-label="المفضلة" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid"><Heart className="h-5 w-5" /></Link>
           <Link href="/حسابي" aria-label="حسابي" className="hidden h-10 w-10 place-items-center rounded-full text-[#173c37] transition-colors hover:bg-stone-100 sm:grid">
             <UserRound className="h-5 w-5" />
