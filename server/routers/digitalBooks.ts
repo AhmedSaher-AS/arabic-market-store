@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createLocalDigitalBookOrder, getReadableBook, getReadingProgress, listAllDigitalBooks, listAvailableDigitalBooks, listDigitalBooksForUser, markOwnerNotified, removeDigitalBook, saveReadingProgress, updateDigitalBookDetails, upsertDigitalBook } from "../db";
+import { createLocalDigitalBookOrder, getReadableBook, getReadingProgress, listAllDigitalBooks, listAvailableDigitalBooks, listDigitalBooksForUser, markOwnerNotified, removeDigitalBook, saveReadingProgress, updateDigitalBookCover, updateDigitalBookDetails, upsertDigitalBook } from "../db";
 import { paymentMethods } from "../../drizzle/schema";
 import { notifyOwner } from "../_core/notification";
 import { parseBase64Upload, safeFileStem } from "../fileUpload";
@@ -17,10 +17,18 @@ export const digitalBooksRouter = router({
     isAvailable: z.boolean().default(true),
     fileName: z.string().trim().min(1).max(255),
     dataUrl: z.string().min(20).max(34_000_000),
+    coverDataUrl: z.string().min(20).max(9_000_000).optional(),
   })).mutation(async ({ input }) => {
     const { content } = parseBase64Upload(input.dataUrl, ["application/pdf"], 24 * 1024 * 1024);
     const stored = await storagePut(`digital-books/${safeFileStem(input.productHandle)}-${Date.now()}.pdf`, content, "application/pdf");
-    await upsertDigitalBook({ productHandle: input.productHandle, title: input.title, description: input.description, price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0, fileName: input.fileName, pdfKey: stored.key, pdfUrl: stored.url });
+    let cover: { coverKey?: string; coverUrl?: string } = {};
+    if (input.coverDataUrl) {
+      const parsedCover = parseBase64Upload(input.coverDataUrl, ["image/jpeg", "image/png", "image/webp"], 6 * 1024 * 1024);
+      const extension = parsedCover.contentType === "image/png" ? "png" : parsedCover.contentType === "image/webp" ? "webp" : "jpg";
+      const uploadedCover = await storagePut(`digital-book-covers/${safeFileStem(input.productHandle)}-${Date.now()}.${extension}`, parsedCover.content, parsedCover.contentType);
+      cover = { coverKey: uploadedCover.key, coverUrl: uploadedCover.url };
+    }
+    await upsertDigitalBook({ productHandle: input.productHandle, title: input.title, description: input.description, price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0, fileName: input.fileName, pdfKey: stored.key, pdfUrl: stored.url, ...cover });
     return { success: true } as const;
   }),
   adminList: adminProcedure.query(() => listAllDigitalBooks()),
@@ -50,6 +58,21 @@ export const digitalBooksRouter = router({
   })).mutation(async ({ input }) => {
     await updateDigitalBookDetails(input.bookId, { title: input.title, description: input.description, price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0 });
     return { success: true } as const;
+  }),
+  updateCover: adminProcedure.input(z.object({
+    bookId: z.number().int().positive(),
+    coverDataUrl: z.string().min(20).max(9_000_000).optional(),
+    removeCover: z.boolean().default(false),
+  }).refine(input => input.removeCover || Boolean(input.coverDataUrl), { message: "اختر غلافًا أو اطلب حذفه." })).mutation(async ({ input }) => {
+    if (input.removeCover) {
+      await updateDigitalBookCover(input.bookId, { coverKey: null, coverUrl: null });
+      return { success: true, coverUrl: null } as const;
+    }
+    const parsedCover = parseBase64Upload(input.coverDataUrl!, ["image/jpeg", "image/png", "image/webp"], 6 * 1024 * 1024);
+    const extension = parsedCover.contentType === "image/png" ? "png" : parsedCover.contentType === "image/webp" ? "webp" : "jpg";
+    const uploadedCover = await storagePut(`digital-book-covers/${input.bookId}-${Date.now()}.${extension}`, parsedCover.content, parsedCover.contentType);
+    await updateDigitalBookCover(input.bookId, { coverKey: uploadedCover.key, coverUrl: uploadedCover.url });
+    return { success: true, coverUrl: uploadedCover.url } as const;
   }),
   remove: adminProcedure.input(z.object({ bookId: z.number().int().positive(), confirmed: z.literal(true) })).mutation(async ({ input }) => {
     await removeDigitalBook(input.bookId);

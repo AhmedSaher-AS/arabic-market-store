@@ -337,18 +337,27 @@ export type DigitalBookInput = {
   fileName: string;
   pdfKey: string;
   pdfUrl: string;
+  coverKey?: string | null;
+  coverUrl?: string | null;
 };
 
 export async function upsertDigitalBook(input: DigitalBookInput) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
-  await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: { title: input.title, description: input.description, price: input.price, currencyCode: input.currencyCode, isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl } });
+  const updates = { title: input.title, description: input.description, price: input.price, currencyCode: input.currencyCode, isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl, ...(input.coverKey !== undefined ? { coverKey: input.coverKey, coverUrl: input.coverUrl ?? null } : {}) };
+  await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: updates });
 }
 
 export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "price" | "currencyCode" | "isAvailable">) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
   await db.update(digitalBooks).set(input).where(eq(digitalBooks.id, bookId));
+}
+
+export async function updateDigitalBookCover(bookId: number, cover: { coverKey: string | null; coverUrl: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  await db.update(digitalBooks).set(cover).where(eq(digitalBooks.id, bookId));
 }
 
 export async function listAvailableDigitalBooks() {

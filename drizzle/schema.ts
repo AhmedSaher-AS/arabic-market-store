@@ -117,6 +117,8 @@ export const digitalBooks = mysqlTable("digitalBooks", {
   fileName: varchar("fileName", { length: 255 }).notNull(),
   pdfKey: varchar("pdfKey", { length: 512 }).notNull(),
   pdfUrl: text("pdfUrl").notNull(),
+  coverKey: varchar("coverKey", { length: 512 }),
+  coverUrl: text("coverUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

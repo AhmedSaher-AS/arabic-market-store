@@ -1,5 +1,6 @@
 import { CartDrawer } from "@/components/CartDrawer";
 import { StoreHeader } from "@/components/StoreHeader";
+import { WhatsAppSupport } from "@/components/WhatsAppSupport";
 import { ReactNode } from "react";
 import { Link } from "wouter";
 
@@ -9,6 +10,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
       <StoreHeader />
       <CartDrawer />
       <main>{children}</main>
+      <WhatsAppSupport />
       <footer className="border-t border-stone-200 bg-[#173c37] text-stone-200">
         <div className="container grid gap-8 py-10 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
@@ -16,7 +18,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
             <p className="mt-4 max-w-sm text-sm leading-7 text-stone-300">مكتبة رقمية عربية لاكتشاف الكتب وقراءتها من حسابك، مع تجربة شراء واضحة ووصول محمي بعد اعتماد السداد.</p>
           </div>
           <div><h3 className="font-bold text-white">المكتبة الرقمية</h3><div className="mt-4 grid gap-3 text-sm text-stone-300"><Link href="/كتب-رقمية">اكتشف الكتب الرقمية</Link><Link href="/مكتبتي">مكتبتي وقراءاتي</Link><Link href="/المفضلة">كتبي المفضلة</Link><Link href="/متجر-مستقل">المتجر المتنوع</Link></div></div>
-          <div><h3 className="font-bold text-white">الدفع والطلبات</h3><p className="mt-4 text-sm leading-7 text-stone-300">تتوفر فودافون كاش، إنستا باي، فيزا/ماستركارد، وPayPal بعد تفعيل الوسائل من حساب التاجر.</p><div className="mt-3 grid gap-2 text-sm font-bold text-[#f5c96a]"><Link href="/المساعدة" className="hover:text-white">مركز المساعدة والأسئلة الشائعة</Link><Link href="/ضمان-المتجر" className="hover:text-white">ضمان وثقة المتجر</Link><Link href="/سياسة-الشحن" className="hover:text-white">سياسة الشحن</Link><Link href="/الاستبدال-والاسترجاع" className="hover:text-white">الاستبدال والاسترجاع</Link><Link href="/الخصوصية" className="hover:text-white">الخصوصية</Link></div></div>
+          <div><h3 className="font-bold text-white">الدفع والطلبات</h3><p className="mt-4 text-sm leading-7 text-stone-300">تتوفر فودافون كاش، إنستا باي، فيزا/ماستركارد، وPayPal بعد تفعيل الوسائل من حساب التاجر.</p><div className="mt-3 grid gap-2 text-sm font-bold text-[#f5c96a]"><a href="https://wa.me/201146303129?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%AD%D8%AA%D8%A7%D8%AC%20%D9%85%D8%B3%D8%A7%D8%B9%D8%AF%D8%A9%20%D9%81%D9%8A%20%D8%B3%D9%88%D9%82%D9%83%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A." target="_blank" rel="noreferrer" className="hover:text-white">تواجه مشكلة؟ كلم الدعم على واتساب</a><Link href="/المساعدة" className="hover:text-white">مركز المساعدة والأسئلة الشائعة</Link><Link href="/ضمان-المتجر" className="hover:text-white">ضمان وثقة المتجر</Link><Link href="/سياسة-الشحن" className="hover:text-white">سياسة الشحن</Link><Link href="/الاستبدال-والاسترجاع" className="hover:text-white">الاستبدال والاسترجاع</Link><Link href="/الخصوصية" className="hover:text-white">الخصوصية</Link></div></div>
         </div>
         <div className="border-t border-white/10"><div className="container flex flex-col gap-2 py-4 text-xs text-stone-400 sm:flex-row sm:items-center sm:justify-between"><span>© {new Date().getFullYear()} سوقك العربي</span><Link href="/المدير" className="hover:text-white">بوابة المدير</Link></div></div>
       </footer>

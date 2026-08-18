@@ -17,4 +17,9 @@ describe("local digital book pricing access", () => {
     const caller = appRouter.createCaller({ user: customer, req: {} as TrpcContext["req"], res: {} as TrpcContext["res"] });
     await expect(caller.digitalBooks.updateDetails({ bookId: 1, title: "كتاب", description: "وصف", price: 99, currencyCode: "EGP", isAvailable: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("prevents a customer from replacing or deleting a digital-book cover", async () => {
+    const caller = appRouter.createCaller({ user: customer, req: {} as TrpcContext["req"], res: {} as TrpcContext["res"] });
+    await expect(caller.digitalBooks.updateCover({ bookId: 1, removeCover: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 });
