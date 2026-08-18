@@ -42,14 +42,14 @@ export const digitalBooksRouter = router({
       const uploadedSample = await storagePut(`digital-book-samples/${safeFileStem(input.productHandle)}-${Date.now()}.pdf`, parsedSample.content, "application/pdf");
       sample = { sampleKey: uploadedSample.key, sampleUrl: uploadedSample.url };
     }
-    await upsertDigitalBook({
+    const book = await upsertDigitalBook({
       productHandle: input.productHandle, title: input.title, description: input.description,
       shortDescription: input.shortDescription, author: input.author, language: input.language,
       pageCount: input.pageCount, category: input.category, tags: input.tags, tableOfContents: input.tableOfContents ?? null,
       price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0,
       fileName: input.fileName, pdfKey: stored.key, pdfUrl: stored.url, ...sample, ...cover,
     });
-    return { success: true } as const;
+    return { success: true, book: { id: book.id, title: book.title, productHandle: book.productHandle, isAvailable: Boolean(book.isAvailable) } } as const;
   }),
   adminList: adminProcedure.query(() => listAllDigitalBooks()),
   catalog: publicProcedure.query(() => listAvailableDigitalBooks()),

@@ -370,6 +370,9 @@ export async function upsertDigitalBook(input: DigitalBookInput) {
     ...(input.coverKey !== undefined ? { coverKey: input.coverKey, coverUrl: input.coverUrl ?? null } : {}),
   };
   await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: updates });
+  const saved = await db.select().from(digitalBooks).where(eq(digitalBooks.productHandle, input.productHandle)).limit(1);
+  if (!saved[0]) throw new Error("تعذر تأكيد حفظ الكتاب الرقمي.");
+  return saved[0];
 }
 
 export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "shortDescription" | "author" | "language" | "pageCount" | "category" | "tags" | "tableOfContents" | "price" | "currencyCode" | "isAvailable">) {
