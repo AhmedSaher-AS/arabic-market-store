@@ -58,13 +58,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
+    // The account configured as the project owner is the only possible admin.
+    // This runs on every authentication sync, so stale or manually altered roles
+    // cannot grant administration access to a different account.
+    const role = user.openId === ENV.ownerOpenId ? 'admin' : 'user';
+    values.role = role;
+    updateSet.role = role;
 
     if (!values.lastSignedIn) {
       values.lastSignedIn = new Date();

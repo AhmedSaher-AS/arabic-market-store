@@ -316,7 +316,15 @@ class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    // Re-read after the sync because upsertUser derives the role solely from
+    // OWNER_OPEN_ID. This immediately revokes any stale admin role from a
+    // different account before the request reaches protected procedures.
+    const refreshedUser = await db.getUserByOpenId(user.openId);
+    if (!refreshedUser) {
+      throw ForbiddenError("User not found after sync");
+    }
+
+    return refreshedUser;
   }
 }
 

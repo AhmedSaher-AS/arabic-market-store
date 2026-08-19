@@ -1,8 +1,9 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreSeo } from "@/components/StoreSeo";
+import { useAuth } from "@/_core/hooks/useAuth";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { CartProvider } from "./contexts/CartContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -23,6 +24,21 @@ import SearchPage from "./pages/SearchPage";
 import WishlistPage from "./pages/WishlistPage";
 import StorePolicy from "./pages/StorePolicy";
 import StoreTrust from "./pages/StoreTrust";
+import { useEffect } from "react";
+
+function AdminRoute() {
+  const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && user?.role !== "admin") {
+      setLocation("/", { replace: true });
+    }
+  }, [loading, setLocation, user?.role]);
+
+  if (loading || user?.role !== "admin") return null;
+  return <Admin />;
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -49,7 +65,7 @@ function Router() {
       <Route path={"/حسابي"} component={Account} />
       <Route path={"/طلباتي"} component={OrderTracking} />
       <Route path={"/مكتبتي"} component={DigitalLibrary} />
-      <Route path={"/المدير"} component={Admin} />
+      <Route path={"/المدير"} component={AdminRoute} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
