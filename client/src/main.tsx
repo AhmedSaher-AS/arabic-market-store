@@ -72,7 +72,12 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
+const root = document.getElementById("root")!;
+// Public book pages receive crawler-visible HTML from the server. The React app
+// replaces that snapshot on load so the existing interactive SPA remains intact.
+if (root.hasAttribute("data-indexable-book")) root.replaceChildren();
+
+createRoot(root).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <App />
