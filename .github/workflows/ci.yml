@@ -1,0 +1,34 @@
+name: تحقق متجر سوقك العربي
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: فحص الأنواع والاختبارات
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: استنساخ المصدر
+        uses: actions/checkout@v4
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: إعداد pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: تثبيت التبعيات المقفلة
+        run: pnpm install --frozen-lockfile
+      - name: فحص الأنواع
+        run: pnpm check
+      - name: تشغيل الاختبارات
+        run: pnpm test
