@@ -302,6 +302,7 @@ export async function upsertPaymentProof(input: typeof paymentProofs.$inferInser
   await db.insert(paymentProofs).values(input).onDuplicateKeyUpdate({
     set: {
       transactionReference: input.transactionReference,
+      paidAmount: input.paidAmount,
       note: input.note,
       imageKey: input.imageKey,
       imageUrl: input.imageUrl,

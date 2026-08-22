@@ -98,6 +98,7 @@ export const paymentProofs = mysqlTable("paymentProofs", {
   orderId: int("orderId").notNull().references(() => orders.id),
   userId: int("userId").notNull().references(() => users.id),
   transactionReference: varchar("transactionReference", { length: 160 }),
+  paidAmount: decimal("paidAmount", { precision: 12, scale: 2 }),
   note: text("note"),
   imageKey: varchar("imageKey", { length: 512 }).notNull(),
   imageUrl: text("imageUrl").notNull(),

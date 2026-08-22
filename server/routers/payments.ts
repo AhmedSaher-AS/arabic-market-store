@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getOrderForUser, getPaymentSettings, listPendingPaymentProofs, reviewPaymentProof, updatePaymentSettings, upsertPaymentProof } from "../db";
 import { parseBase64Upload, safeFileStem } from "../fileUpload";
 import { storageGetSignedUrl, storagePut } from "../storage";
+import { isPaymentProofAmountAccepted } from "../paymentProofAmount";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 
 const paymentSettingsSchema = z.object({
@@ -34,6 +35,7 @@ export const paymentsRouter = router({
     orderId: z.number().int().positive(),
     dataUrl: z.string().min(20).max(12_000_000),
     fileName: z.string().trim().min(1).max(180),
+    paidAmount: z.coerce.number().positive().max(10_000_000),
     transactionReference: z.string().trim().max(160).optional(),
     note: z.string().trim().max(1000).optional(),
   })).mutation(async ({ ctx, input }) => {
@@ -42,10 +44,14 @@ export const paymentsRouter = router({
     if (!["فودافون كاش", "فوري", "واتساب"].includes(order.paymentMethod)) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "إثبات السداد متاح فقط للدفع اليدوي." });
     }
+    const expectedAmount = Number(order.total);
+    if (!isPaymentProofAmountAccepted(expectedAmount, input.paidAmount)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: `مبلغ التحويل لا يطابق إجمالي الطلب ضمن هامش المراجعة المسموح. المبلغ المطلوب: ${expectedAmount.toFixed(2)} ${order.currencyCode}.` });
+    }
     const { content, contentType } = parseBase64Upload(input.dataUrl, ["image/jpeg", "image/png", "image/webp"], 8 * 1024 * 1024);
     const extension = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
     const stored = await storagePut(`payment-proofs/${ctx.user.id}/${order.orderNumber}-${safeFileStem(input.fileName)}.${extension}`, content, contentType);
-    await upsertPaymentProof({ orderId: order.id, userId: ctx.user.id, transactionReference: input.transactionReference || null, note: input.note || null, imageKey: stored.key, imageUrl: stored.url });
+    await upsertPaymentProof({ orderId: order.id, userId: ctx.user.id, paidAmount: input.paidAmount.toFixed(2), transactionReference: input.transactionReference || null, note: input.note || null, imageKey: stored.key, imageUrl: stored.url });
     return { success: true, proofUrl: stored.url } as const;
   }),
   pendingProofs: adminProcedure.query(async () => {

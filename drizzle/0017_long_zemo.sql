@@ -1,0 +1,1 @@
+ALTER TABLE `paymentProofs` ADD `paidAmount` decimal(12,2);
