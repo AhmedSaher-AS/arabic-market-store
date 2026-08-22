@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createLocalDigitalBookOrder, getAvailableDigitalBookByHandle, getReadableBook, getReadingProgress, listAllDigitalBooks, listAvailableDigitalBooks, listDigitalBooksForUser, listRelatedDigitalBooks, markOwnerNotified, recordDigitalBookEvent, removeDigitalBook, saveReadingProgress, updateDigitalBookCover, updateDigitalBookDetails, updateDigitalBookSample, upsertDigitalBook } from "../db";
+import { createLocalDigitalBookOrder, getAvailableDigitalBookByHandle, getDigitalBookDownloadInfo, getReadableBook, getReadingProgress, listAllDigitalBooks, listAvailableDigitalBooks, listDigitalBooksForUser, listRelatedDigitalBooks, markOwnerNotified, recordDigitalBookEvent, registerDigitalBookDownload, removeDigitalBook, saveReadingProgress, updateDigitalBookCover, updateDigitalBookDetails, updateDigitalBookSample, upsertDigitalBook } from "../db";
 import { paymentMethods } from "../../drizzle/schema";
 import { notifyOwner } from "../_core/notification";
 import { parseBase64Upload, safeFileStem } from "../fileUpload";
@@ -22,6 +22,7 @@ export const digitalBooksRouter = router({
     price: z.coerce.number().min(0).max(10_000_000),
     currencyCode: z.string().trim().length(3).default("EGP"),
     isAvailable: z.boolean().default(true),
+    maxDownloads: z.coerce.number().int().min(0).max(100).default(5),
     fileName: z.string().trim().min(1).max(255),
     dataUrl: z.string().min(20).max(34_000_000),
     coverDataUrl: z.string().min(20).max(9_000_000).optional(),
@@ -47,7 +48,7 @@ export const digitalBooksRouter = router({
       shortDescription: input.shortDescription, author: input.author, language: input.language,
       pageCount: input.pageCount, category: input.category, tags: input.tags, tableOfContents: input.tableOfContents ?? null,
       price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0,
-      fileName: input.fileName, pdfKey: stored.key, pdfUrl: stored.url, ...sample, ...cover,
+      fileName: input.fileName, pdfKey: stored.key, pdfUrl: stored.url, maxDownloads: input.maxDownloads, ...sample, ...cover,
     });
     return { success: true, book: { id: book.id, title: book.title, productHandle: book.productHandle, isAvailable: Boolean(book.isAvailable) } } as const;
   }),
@@ -95,11 +96,13 @@ export const digitalBooksRouter = router({
     price: z.coerce.number().min(0).max(10_000_000),
     currencyCode: z.string().trim().length(3).default("EGP"),
     isAvailable: z.boolean(),
+    maxDownloads: z.coerce.number().int().min(0).max(100).optional(),
   })).mutation(async ({ input }) => {
     await updateDigitalBookDetails(input.bookId, {
       title: input.title, description: input.description, shortDescription: input.shortDescription, author: input.author,
       language: input.language, pageCount: input.pageCount, category: input.category, tags: input.tags,
       tableOfContents: input.tableOfContents, price: input.price.toFixed(2), currencyCode: input.currencyCode.toUpperCase(), isAvailable: input.isAvailable ? 1 : 0,
+      ...(input.maxDownloads === undefined ? {} : { maxDownloads: input.maxDownloads }),
     });
     return { success: true } as const;
   }),
@@ -141,7 +144,18 @@ export const digitalBooksRouter = router({
     const book = await getReadableBook(input.productHandle, ctx.user.id, ctx.user.role === "admin");
     if (!book) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية قراءة هذا الكتاب حاليًا." });
     const signedUrl = await storageGetSignedUrl(book.pdfKey);
-    return { id: book.id, title: book.title, pdfUrl: signedUrl, downloadUrl: signedUrl, lastPage: await getReadingProgress(ctx.user.id, book.id) };
+    const download = await getDigitalBookDownloadInfo(ctx.user.id, book.id, ctx.user.role === "admin");
+    return { id: book.id, title: book.title, pdfUrl: signedUrl, lastPage: await getReadingProgress(ctx.user.id, book.id), ...download };
+  }),
+  download: protectedProcedure.input(z.object({ productHandle: z.string().min(1).max(255) })).mutation(async ({ ctx, input }) => {
+    const book = await getReadableBook(input.productHandle, ctx.user.id, ctx.user.role === "admin");
+    if (!book) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية تنزيل هذا الكتاب حاليًا." });
+    try {
+      const download = await registerDigitalBookDownload(ctx.user.id, book.id, ctx.user.role === "admin");
+      return { title: book.title, downloadUrl: await storageGetSignedUrl(book.pdfKey), ...download };
+    } catch (error) {
+      throw new TRPCError({ code: "FORBIDDEN", message: error instanceof Error ? error.message : "تعذر إصدار رابط التنزيل." });
+    }
   }),
   saveProgress: protectedProcedure.input(z.object({ productHandle: z.string().min(1).max(255), lastPage: z.number().int().min(1).max(100000) })).mutation(async ({ ctx, input }) => {
     const book = await getReadableBook(input.productHandle, ctx.user.id, ctx.user.role === "admin");

@@ -11,11 +11,11 @@ import { Link } from "wouter";
 function toDataUrl(file: File) { return new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("تعذر قراءة الملف.")); reader.onerror = () => reject(new Error("تعذر قراءة الملف.")); reader.readAsDataURL(file); }); }
 function priceLabel(book: { price: string | number; currencyCode: string }) { return Number(book.price) === 0 ? "مجاني" : `${Number(book.price).toLocaleString("ar-EG")} ${book.currencyCode}`; }
 
-type BookEditor = { id: number; productHandle: string; title: string; description: string; shortDescription: string; author: string; language: string; pageCount: number; category: string; tags: string; tableOfContents: string | null; price: string; currencyCode: string; isAvailable: boolean };
+type BookEditor = { id: number; productHandle: string; title: string; description: string; shortDescription: string; author: string; language: string; pageCount: number; category: string; tags: string; tableOfContents: string | null; price: string; currencyCode: string; isAvailable: boolean; maxDownloads: number };
 type CoverTarget = { id: number; title: string; coverUrl: string | null };
 type SampleTarget = { id: number; title: string; sampleUrl: string | null };
 
-const initialEditor = () => ({ productHandle: "", title: "", description: "", shortDescription: "", author: "", language: "العربية", pageCount: "", category: "عام", tags: "", tableOfContents: "", price: "", currencyCode: "EGP", isAvailable: true });
+const initialEditor = () => ({ productHandle: "", title: "", description: "", shortDescription: "", author: "", language: "العربية", pageCount: "", category: "عام", tags: "", tableOfContents: "", price: "", currencyCode: "EGP", isAvailable: true, maxDownloads: "5" });
 
 export function DigitalBookUploader() {
   const utils = trpc.useUtils();
@@ -65,7 +65,7 @@ export function DigitalBookUploader() {
     bookId: book.id, title: book.title, description: book.description, shortDescription: book.shortDescription,
     author: book.author, language: book.language, pageCount: Number(book.pageCount) || 0, category: book.category,
     tags: book.tags, tableOfContents: book.tableOfContents || null, price: Number(book.price),
-    currencyCode: book.currencyCode, isAvailable: book.isAvailable,
+    currencyCode: book.currencyCode, isAvailable: book.isAvailable, maxDownloads: book.maxDownloads,
   });
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -77,7 +77,7 @@ export function DigitalBookUploader() {
         productHandle: draft.productHandle, title: draft.title, description: draft.description, shortDescription: draft.shortDescription,
         author: draft.author, language: draft.language, pageCount: Number(draft.pageCount) || 0, category: draft.category,
         tags: draft.tags, tableOfContents: draft.tableOfContents || undefined, price: Number(draft.price), currencyCode: draft.currencyCode,
-        isAvailable: draft.isAvailable, fileName: file.name, dataUrl: await toDataUrl(file),
+        isAvailable: draft.isAvailable, maxDownloads: Number(draft.maxDownloads) || 0, fileName: file.name, dataUrl: await toDataUrl(file),
         coverDataUrl: newBookCover ? await toDataUrl(newBookCover) : undefined, sampleDataUrl: newBookSample ? await toDataUrl(newBookSample) : undefined,
       });
       setMessage(result.book.isAvailable ? "تم نشر الكتاب بنجاح وهو ظاهر الآن في المكتبة." : "تم حفظ الكتاب بنجاح، لكنه متوقف حاليًا ولن يظهر للقراء حتى تفعّل التوفر."); setMessageTone("success"); setPublishedBook(result.book); setDraft(initialEditor()); setFile(null); setNewBookCover(null); setNewBookSample(null);
@@ -86,9 +86,9 @@ export function DigitalBookUploader() {
   const toEditor = (book: typeof books[number]): BookEditor => ({
     id: book.id, productHandle: book.productHandle, title: book.title, description: book.description,
     shortDescription: book.shortDescription, author: book.author, language: book.language, pageCount: book.pageCount,
-    category: book.category, tags: book.tags, tableOfContents: book.tableOfContents, price: String(book.price), currencyCode: book.currencyCode, isAvailable: Boolean(book.isAvailable),
+    category: book.category, tags: book.tags, tableOfContents: book.tableOfContents, price: String(book.price), currencyCode: book.currencyCode, isAvailable: Boolean(book.isAvailable), maxDownloads: book.maxDownloads,
   });
-  const prepareReplacement = (book: BookEditor) => { setDraft({ ...book, pageCount: String(book.pageCount), tableOfContents: book.tableOfContents || "" }); setFile(null); setMessage("اختر ملف PDF جديدًا ثم احفظ لاستبدال النسخة الحالية."); window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); };
+  const prepareReplacement = (book: BookEditor) => { setDraft({ ...book, pageCount: String(book.pageCount), maxDownloads: String(book.maxDownloads), tableOfContents: book.tableOfContents || "" }); setFile(null); setMessage("اختر ملف PDF جديدًا ثم احفظ لاستبدال النسخة الحالية."); window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); };
   const saveDetails = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!editingBook || !Number.isFinite(Number(editingBook.price)) || Number(editingBook.price) < 0) return; await updateDetails.mutateAsync(editorPayload(editingBook)); };
   const saveCover = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!coverTarget || !replacementCover) { setMessage("اختر صورة غلاف أولًا."); return; } await updateCover.mutateAsync({ bookId: coverTarget.id, coverDataUrl: await toDataUrl(replacementCover) }); };
   const saveSample = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!sampleTarget || !replacementSample) { setMessage("اختر ملف عينة أولًا."); return; } await updateSample.mutateAsync({ bookId: sampleTarget.id, sampleDataUrl: await toDataUrl(replacementSample) }); };

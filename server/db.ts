@@ -1,8 +1,9 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { digitalBookEvents, digitalBookReviews, digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
+import { digitalBookDownloads, digitalBookEvents, digitalBookReviews, digitalBooks, digitalEntitlements, InsertUser, localProducts, orderItems, orders, Order, orderStatuses, paymentMethods, paymentProofs, paymentSettings, readingProgress, storeSettings, users, wishlistItems } from "../drizzle/schema";
 import type { Cart } from "../shared/commerce/types";
 import { ENV } from './_core/env';
+import { remainingDownloads } from "./digitalDownloadLimits";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -356,6 +357,7 @@ export type DigitalBookInput = {
   sampleUrl?: string | null;
   coverKey?: string | null;
   coverUrl?: string | null;
+  maxDownloads?: number;
 };
 
 export async function upsertDigitalBook(input: DigitalBookInput) {
@@ -368,6 +370,7 @@ export async function upsertDigitalBook(input: DigitalBookInput) {
     isAvailable: input.isAvailable, fileName: input.fileName, pdfKey: input.pdfKey, pdfUrl: input.pdfUrl,
     ...(input.sampleKey !== undefined ? { sampleKey: input.sampleKey, sampleUrl: input.sampleUrl ?? null } : {}),
     ...(input.coverKey !== undefined ? { coverKey: input.coverKey, coverUrl: input.coverUrl ?? null } : {}),
+    ...(input.maxDownloads !== undefined ? { maxDownloads: input.maxDownloads } : {}),
   };
   await db.insert(digitalBooks).values(input).onDuplicateKeyUpdate({ set: updates });
   const saved = await db.select().from(digitalBooks).where(eq(digitalBooks.productHandle, input.productHandle)).limit(1);
@@ -375,7 +378,7 @@ export async function upsertDigitalBook(input: DigitalBookInput) {
   return saved[0];
 }
 
-export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "shortDescription" | "author" | "language" | "pageCount" | "category" | "tags" | "tableOfContents" | "price" | "currencyCode" | "isAvailable">) {
+export async function updateDigitalBookDetails(bookId: number, input: Pick<DigitalBookInput, "title" | "description" | "shortDescription" | "author" | "language" | "pageCount" | "category" | "tags" | "tableOfContents" | "price" | "currencyCode" | "isAvailable" | "maxDownloads">) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
   await db.update(digitalBooks).set(input).where(eq(digitalBooks.id, bookId));
@@ -580,6 +583,7 @@ export async function removeDigitalBook(bookId: number) {
     await tx.delete(readingProgress).where(eq(readingProgress.digitalBookId, bookId));
     await tx.delete(digitalBookReviews).where(eq(digitalBookReviews.digitalBookId, bookId));
     await tx.delete(digitalBookEvents).where(eq(digitalBookEvents.digitalBookId, bookId));
+    await tx.delete(digitalBookDownloads).where(eq(digitalBookDownloads.digitalBookId, bookId));
     await tx.delete(digitalEntitlements).where(eq(digitalEntitlements.digitalBookId, bookId));
     await tx.delete(digitalBooks).where(eq(digitalBooks.id, bookId));
   });
@@ -600,6 +604,40 @@ export async function getReadableBook(productHandle: string, userId: number, isA
   }
   const books = await db.select({ book: digitalBooks }).from(digitalEntitlements).innerJoin(digitalBooks, eq(digitalEntitlements.digitalBookId, digitalBooks.id)).where(and(eq(digitalEntitlements.userId, userId), eq(digitalBooks.productHandle, productHandle))).limit(1);
   return books[0]?.book;
+}
+
+export async function getDigitalBookDownloadInfo(userId: number, digitalBookId: number, isAdmin: boolean) {
+  if (isAdmin) return { downloadCount: 0, maxDownloads: 0, remainingDownloads: null as number | null };
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  const rows = await db.select({ downloadCount: digitalEntitlements.downloadCount, maxDownloads: digitalBooks.maxDownloads })
+    .from(digitalEntitlements).innerJoin(digitalBooks, eq(digitalEntitlements.digitalBookId, digitalBooks.id))
+    .where(and(eq(digitalEntitlements.userId, userId), eq(digitalEntitlements.digitalBookId, digitalBookId))).limit(1);
+  const info = rows[0];
+  if (!info) throw new Error("لا تملك صلاحية تنزيل هذا الكتاب.");
+  return { downloadCount: info.downloadCount, maxDownloads: info.maxDownloads, remainingDownloads: remainingDownloads(info.maxDownloads, info.downloadCount) };
+}
+
+export async function registerDigitalBookDownload(userId: number, digitalBookId: number, isAdmin: boolean) {
+  if (isAdmin) return { downloadCount: 0, maxDownloads: 0, remainingDownloads: null as number | null };
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة حاليًا.");
+  return db.transaction(async tx => {
+    const rows = await tx.select({ downloadCount: digitalEntitlements.downloadCount, maxDownloads: digitalBooks.maxDownloads })
+      .from(digitalEntitlements).innerJoin(digitalBooks, eq(digitalEntitlements.digitalBookId, digitalBooks.id))
+      .where(and(eq(digitalEntitlements.userId, userId), eq(digitalEntitlements.digitalBookId, digitalBookId))).limit(1);
+    const entitlement = rows[0];
+    if (!entitlement) throw new Error("لا تملك صلاحية تنزيل هذا الكتاب.");
+    const capped = entitlement.maxDownloads > 0;
+    const condition = capped
+      ? and(eq(digitalEntitlements.userId, userId), eq(digitalEntitlements.digitalBookId, digitalBookId), lt(digitalEntitlements.downloadCount, entitlement.maxDownloads))
+      : and(eq(digitalEntitlements.userId, userId), eq(digitalEntitlements.digitalBookId, digitalBookId));
+    const update = await tx.update(digitalEntitlements).set({ downloadCount: sql`${digitalEntitlements.downloadCount} + 1` }).where(condition);
+    if (!update[0].affectedRows) throw new Error("تم بلوغ الحد المسموح لتنزيل هذا الكتاب.");
+    await tx.insert(digitalBookDownloads).values({ digitalBookId, userId });
+    const downloadCount = entitlement.downloadCount + 1;
+    return { downloadCount, maxDownloads: entitlement.maxDownloads, remainingDownloads: remainingDownloads(entitlement.maxDownloads, downloadCount) };
+  });
 }
 
 export async function getReadingProgress(userId: number, digitalBookId: number) {

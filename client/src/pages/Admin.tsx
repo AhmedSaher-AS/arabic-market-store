@@ -1,6 +1,8 @@
 import { AdminQuickActions } from "@/components/AdminQuickActions";
+import { DownloadPolicyManager } from "@/components/DownloadPolicyManager";
 import { DigitalBookUploader } from "@/components/DigitalBookUploader";
 import { LocalProductManager } from "@/components/LocalProductManager";
+import { OperationsSummary } from "@/components/OperationsSummary";
 import { PaymentOperations } from "@/components/PaymentOperations";
 import { StoreContentEditor } from "@/components/StoreContentEditor";
 import { StoreBasicsManager } from "@/components/StoreBasicsManager";
@@ -42,6 +44,7 @@ export default function Admin() {
       <div className="rounded-3xl bg-[#ebe8f5] p-5"><p className="text-sm font-bold text-stone-600">طلبات مكتملة</p><strong className="mt-3 block text-3xl font-black text-[#50427b]">{metrics.fulfilledOrders}</strong><p className="mt-2 text-xs text-stone-500">اكتملت دورة التنفيذ</p></div>
       <div className="rounded-3xl bg-[#173c37] p-5 text-white"><p className="text-sm font-bold text-stone-300">إجمالي القيمة</p><strong className="mt-3 block text-3xl font-black text-[#f5c96a]">{metrics.revenue.toLocaleString("ar-EG")}</strong><p className="mt-2 text-xs text-stone-300">بالعملة المسجلة في الطلب</p></div>
     </section>
+    <OperationsSummary />
     <section className="mt-7 grid gap-5 md:grid-cols-3">
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e3eee8] text-[#173c37]"><Package className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المنتجات والمخزون</h2><p className="mt-2 text-sm leading-7 text-stone-500">أضف أو عدّل أو احذف المنتجات والأسعار والصور والمخزون من هذه البوابة مباشرة.</p></div>
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#f7ead6] text-[#9a5821]"><Truck className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">الطلبات والمدفوعات</h2><p className="mt-2 text-sm leading-7 text-stone-500">راجع إثباتات السداد وحدّث دورة التنفيذ بالحالات: معلق، مؤكد، مشحون، مكتمل.</p></div>
@@ -52,6 +55,7 @@ export default function Admin() {
     <StoreContentEditor />
     <div id="payment-operations" className="scroll-mt-24"><PaymentOperations /></div>
     <DigitalBookUploader />
+    <DownloadPolicyManager />
     <section id="incoming-orders" className="mt-7 scroll-mt-24 overflow-hidden rounded-3xl border border-stone-200 bg-white">
       <div className="flex items-center justify-between border-b border-stone-200 px-6 py-5"><div><h2 className="text-xl font-black text-[#173c37]">الطلبات الواردة</h2><p className="mt-1 text-sm text-stone-500">تظهر الطلبات الجديدة أولًا.</p></div><span className="rounded-full bg-[#e3eee8] px-3 py-1 text-sm font-bold text-[#173c37]">{orders.length}</span></div>
       {ordersLoading ? <div className="grid min-h-48 place-items-center"><LoaderCircle className="h-6 w-6 animate-spin text-[#b76f2c]" /></div> : orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-right text-sm"><thead className="bg-[#fffdf8] text-stone-500"><tr><th className="px-6 py-4 font-bold">الطلب</th><th className="px-4 py-4 font-bold">العميل</th><th className="px-4 py-4 font-bold">الدفع</th><th className="px-4 py-4 font-bold">الإجمالي</th><th className="px-4 py-4 font-bold">الحالة</th></tr></thead><tbody>{orders.map(order => <tr key={order.id} className="border-t border-stone-100"><td className="px-6 py-4"><strong className="block text-[#173c37]">{order.orderNumber}</strong><span className="mt-1 block text-xs text-stone-400">{new Date(order.createdAt).toLocaleDateString("ar-EG")}</span></td><td className="px-4 py-4"><strong className="block text-[#173c37]">{order.customerName}</strong><span className="mt-1 block text-xs text-stone-500">{order.customerPhone}</span></td><td className="px-4 py-4 text-stone-600">{order.paymentMethod}</td><td className="px-4 py-4 font-bold text-[#173c37]">{Number(order.total).toLocaleString("ar-EG")} {order.currencyCode}</td><td className="px-4 py-4"><select value={order.status} disabled={updateStatus.isPending} onChange={event => updateStatus.mutate({ orderId: order.id, status: event.target.value as (typeof statuses)[number] })} className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-[#173c37] outline-none focus:border-[#173c37]">{statuses.map(status => <option key={status} value={status}>{status}</option>)}</select></td></tr>)}</tbody></table></div> : <div className="px-6 py-14 text-center text-sm text-stone-500">لا توجد طلبات مسجلة حتى الآن.</div>}

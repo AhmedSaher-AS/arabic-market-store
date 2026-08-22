@@ -1,0 +1,15 @@
+import { trpc } from "@/lib/trpc";
+import { AlertTriangle, CircleDollarSign, ClipboardList, LoaderCircle, PackageCheck } from "lucide-react";
+
+export function OperationsSummary() {
+  const { data, isLoading } = trpc.storeBasics.operations.useQuery();
+  if (isLoading) return <section className="mt-7 grid min-h-32 place-items-center rounded-3xl border border-stone-200 bg-white"><LoaderCircle className="h-6 w-6 animate-spin text-[#b76f2c]" /></section>;
+  if (!data) return null;
+  const cards = [
+    { label: "إجمالي الطلبات", value: data.orders.toLocaleString("ar-EG"), icon: ClipboardList, tone: "bg-[#e3eee8] text-[#173c37]" },
+    { label: "طلبات معلقة", value: data.pending.toLocaleString("ar-EG"), icon: AlertTriangle, tone: "bg-[#fff6e9] text-[#9a5821]" },
+    { label: "طلبات مكتملة", value: data.completed.toLocaleString("ar-EG"), icon: PackageCheck, tone: "bg-[#ebe8f5] text-[#50427b]" },
+    { label: "إيراد مسجل", value: `${Number(data.revenue).toLocaleString("ar-EG")} ج.م`, icon: CircleDollarSign, tone: "bg-[#173c37] text-white" },
+  ];
+  return <section className="mt-7 rounded-3xl border border-stone-200 bg-white p-6"><div><h2 className="font-black text-[#173c37]">ملخص التشغيل والمخزون</h2><p className="mt-1 text-xs leading-6 text-stone-500">الإيراد يعكس الطلبات المدفوعة أو المكتملة، وتظهر منتجات المخزون المنخفض للمراجعة المباشرة.</p></div><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(card => { const Icon = card.icon; return <div key={card.label} className={`rounded-2xl p-4 ${card.tone}`}><Icon className="h-5 w-5" /><strong className="mt-4 block text-2xl font-black">{card.value}</strong><p className="mt-1 text-xs font-bold opacity-75">{card.label}</p></div>; })}</div>{data.lowStock.length ? <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4"><div className="flex items-center gap-2 text-sm font-black text-[#80551c]"><AlertTriangle className="h-4 w-4" />منتجات تحتاج مراجعة المخزون</div><div className="mt-3 flex flex-wrap gap-2">{data.lowStock.map(product => <span key={product.id} className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-stone-700">{product.title} · المتبقي {product.inventory.toLocaleString("ar-EG")}</span>)}</div></div> : <p className="mt-5 rounded-2xl bg-[#eaf3ee] px-4 py-3 text-sm font-bold text-[#205f39]">لا توجد منتجات محلية منخفضة المخزون حاليًا.</p>}</section>;
+}

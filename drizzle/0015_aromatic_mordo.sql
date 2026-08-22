@@ -1,0 +1,1 @@
+ALTER TABLE `digitalEntitlements` ADD `downloadCount` int DEFAULT 0 NOT NULL;

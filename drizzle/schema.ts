@@ -1,4 +1,4 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -89,6 +89,7 @@ export const storeSettings = mysqlTable("storeSettings", {
   heroHighlight: varchar("heroHighlight", { length: 200 }).notNull(),
   heroDescription: text("heroDescription").notNull(),
   footerDescription: text("footerDescription").notNull(),
+  cleanupTaskUid: varchar("cleanupTaskUid", { length: 65 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -128,6 +129,7 @@ export const digitalBooks = mysqlTable("digitalBooks", {
   sampleUrl: text("sampleUrl"),
   coverKey: varchar("coverKey", { length: 512 }),
   coverUrl: text("coverUrl"),
+  maxDownloads: int("maxDownloads").notNull().default(5),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -215,8 +217,19 @@ export const digitalEntitlements = mysqlTable("digitalEntitlements", {
   userId: int("userId").notNull().references(() => users.id),
   digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
   orderId: int("orderId").notNull().references(() => orders.id),
+  downloadCount: int("downloadCount").notNull().default(0),
   grantedAt: timestamp("grantedAt").defaultNow().notNull(),
 }, table => [uniqueIndex("digitalEntitlements_orderId_book_unique").on(table.orderId, table.digitalBookId)]);
+
+export const digitalBookDownloads = mysqlTable("digitalBookDownloads", {
+  id: int("id").autoincrement().primaryKey(),
+  digitalBookId: int("digitalBookId").notNull().references(() => digitalBooks.id),
+  userId: int("userId").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("digitalBookDownloads_user_book_idx").on(table.userId, table.digitalBookId),
+  index("digitalBookDownloads_createdAt_idx").on(table.createdAt),
+]);
 
 export const digitalBookReviews = mysqlTable("digitalBookReviews", {
   id: int("id").autoincrement().primaryKey(),

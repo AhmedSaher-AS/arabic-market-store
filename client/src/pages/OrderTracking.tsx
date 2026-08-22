@@ -4,15 +4,24 @@ import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, CheckCircle2, CircleAlert, Clock3, Download, FileCheck2, LoaderCircle, MessageCircle, PackageCheck, PackageSearch, ReceiptText, Truck } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "wouter";
 
 const stages = ["معلق", "مؤكد", "مشحون", "مكتمل"] as const;
 
 function BookDownloadAction({ handle, title }: { handle: string; title: string }) {
   const reader = trpc.digitalBooks.reader.useQuery({ productHandle: handle });
+  const download = trpc.digitalBooks.download.useMutation({
+    onSuccess: data => {
+      window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
+      reader.refetch();
+      toast.success(data.remainingDownloads === null ? "تم تجهيز رابط التنزيل." : `تم تجهيز التنزيل. المتبقي: ${data.remainingDownloads}.`);
+    },
+    onError: error => toast.error(error.message || "تعذر إصدار رابط التنزيل."),
+  });
   if (reader.isLoading) return <span className="text-xs text-stone-400">جارٍ تجهيز الكتاب…</span>;
   if (!reader.data) return <span className="text-xs text-stone-400">الكتاب متاح في المكتبة</span>;
-  return <div className="flex flex-wrap gap-2"><Button asChild size="sm" className="rounded-lg bg-[#173c37] text-xs hover:bg-[#0f2b27]"><Link href="/مكتبتي"><BookOpen className="ml-1 h-3.5 w-3.5" />قراءة {title}</Link></Button><Button asChild size="sm" variant="outline" className="rounded-lg text-xs"><a href={reader.data.downloadUrl} download target="_blank" rel="noreferrer"><Download className="ml-1 h-3.5 w-3.5" />تحميل PDF</a></Button></div>;
+  return <div className="flex flex-wrap items-center gap-2"><Button asChild size="sm" className="rounded-lg bg-[#173c37] text-xs hover:bg-[#0f2b27]"><Link href="/مكتبتي"><BookOpen className="ml-1 h-3.5 w-3.5" />قراءة {title}</Link></Button><Button type="button" size="sm" variant="outline" onClick={() => download.mutate({ productHandle: handle })} disabled={download.isPending || reader.data.remainingDownloads === 0} className="rounded-lg text-xs"><Download className="ml-1 h-3.5 w-3.5" />{download.isPending ? "جارٍ التجهيز…" : "تحميل PDF"}</Button>{reader.data.remainingDownloads !== null && <span className="text-[11px] text-stone-500">المتبقي: {reader.data.remainingDownloads}</span>}</div>;
 }
 
 function OrderStage({ status }: { status: string }) {

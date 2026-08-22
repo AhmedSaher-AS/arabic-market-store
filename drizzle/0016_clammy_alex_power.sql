@@ -1,0 +1,1 @@
+ALTER TABLE `storeSettings` ADD `cleanupTaskUid` varchar(65);
