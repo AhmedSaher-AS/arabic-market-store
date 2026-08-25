@@ -3,29 +3,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreSeo } from "@/components/StoreSeo";
 import { WhatsAppTeamLinkGuard } from "@/components/WhatsAppTeamLinkGuard";
 import { useAuth } from "@/_core/hooks/useAuth";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { CartProvider } from "./contexts/CartContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Account from "./pages/Account";
-import Admin from "./pages/Admin";
-import Catalog from "./pages/Catalog";
-import Checkout from "./pages/Checkout";
-import DigitalLibrary from "./pages/DigitalLibrary";
-import DigitalBookDetails from "./pages/DigitalBookDetails";
 import Home from "./pages/Home";
-import HelpCenter from "./pages/HelpCenter";
-import LocalDigitalBooks from "./pages/LocalDigitalBooks";
-import LocalProducts from "./pages/LocalProducts";
-import OrderTracking from "./pages/OrderTracking";
-import PaymentProof from "./pages/PaymentProof";
-import ProductDetails from "./pages/ProductDetails";
-import SearchPage from "./pages/SearchPage";
-import WishlistPage from "./pages/WishlistPage";
-import StorePolicy from "./pages/StorePolicy";
-import StoreTrust from "./pages/StoreTrust";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+
+const Account = lazy(() => import("./pages/Account"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const DigitalLibrary = lazy(() => import("./pages/DigitalLibrary"));
+const DigitalBookDetails = lazy(() => import("./pages/DigitalBookDetails"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const LocalDigitalBooks = lazy(() => import("./pages/LocalDigitalBooks"));
+const LocalProducts = lazy(() => import("./pages/LocalProducts"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const OrderTracking = lazy(() => import("./pages/OrderTracking"));
+const PaymentProof = lazy(() => import("./pages/PaymentProof"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const WishlistPage = lazy(() => import("./pages/WishlistPage"));
+const StorePolicy = lazy(() => import("./pages/StorePolicy"));
+const StoreTrust = lazy(() => import("./pages/StoreTrust"));
 
 function AdminRoute() {
   const { user, loading } = useAuth();
@@ -91,7 +92,9 @@ function App() {
             <Toaster />
             <StoreSeo />
             <WhatsAppTeamLinkGuard />
-            <Router />
+            <Suspense fallback={<div className="grid min-h-[50vh] place-items-center text-sm font-bold text-[#173c37]">جارٍ تجهيز الصفحة…</div>}>
+              <Router />
+            </Suspense>
           </CartProvider>
         </TooltipProvider>
       </ThemeProvider>
