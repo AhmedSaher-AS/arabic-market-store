@@ -5,6 +5,7 @@ import { LocalProductManager } from "@/components/LocalProductManager";
 import { OperationsSummary } from "@/components/OperationsSummary";
 import { PaymentOperations } from "@/components/PaymentOperations";
 import { StoreContentEditor } from "@/components/StoreContentEditor";
+import { StoreQualityGuard } from "@/components/StoreQualityGuard";
 import { StoreBasicsManager } from "@/components/StoreBasicsManager";
 import { StoreLayout } from "@/components/StoreLayout";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function Admin() {
       <div className="rounded-3xl bg-[#173c37] p-5 text-white"><p className="text-sm font-bold text-stone-300">إجمالي القيمة</p><strong className="mt-3 block text-3xl font-black text-[#f5c96a]">{metrics.revenue.toLocaleString("ar-EG")}</strong><p className="mt-2 text-xs text-stone-300">بالعملة المسجلة في الطلب</p></div>
     </section>
     <OperationsSummary />
+    <StoreQualityGuard />
     <section className="mt-7 grid gap-5 md:grid-cols-3">
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e3eee8] text-[#173c37]"><Package className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">المنتجات والمخزون</h2><p className="mt-2 text-sm leading-7 text-stone-500">أضف أو عدّل أو احذف المنتجات والأسعار والصور والمخزون من هذه البوابة مباشرة.</p></div>
       <div className="rounded-3xl border border-stone-200 bg-white p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#f7ead6] text-[#9a5821]"><Truck className="h-5 w-5" /></span><h2 className="mt-5 font-black text-[#173c37]">الطلبات والمدفوعات</h2><p className="mt-2 text-sm leading-7 text-stone-500">راجع إثباتات السداد وحدّث دورة التنفيذ بالحالات: معلق، مؤكد، مشحون، مكتمل.</p></div>

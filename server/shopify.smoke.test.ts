@@ -8,8 +8,9 @@
  *
  * Behavior:
  *   - Calls the real Storefront API via `listProducts()` (no mocking).
- *   - Auto-skips when `SHOPIFY_STORE_DOMAIN` and the storefront token aren't
- *     configured, so CI environments without credentials stay green.
+ *   - Runs only when `RUN_SHOPIFY_SMOKE=true` is supplied deliberately. This
+ *     keeps a temporary external Storefront outage from failing the store's
+ *     independent test suite.
  *   - Logs the first 3 normalized products so the agent can see the actual
  *     output (titles, prices, image URLs) without reaching for `curl`.
  *
@@ -19,9 +20,9 @@
 import { describe, expect, it } from "vitest";
 import { isShopifyConfigured, listProducts } from "./_core/shopify";
 
-const configured = isShopifyConfigured();
+const runLiveSmoke = process.env.RUN_SHOPIFY_SMOKE === "true" && isShopifyConfigured();
 
-describe.skipIf(!configured)("shopify smoke (live)", () => {
+describe.skipIf(!runLiveSmoke)("shopify smoke (live)", () => {
   it(
     "returns at least one product with title, image, and non-zero price",
     { timeout: 30_000, retry: 1 },
@@ -60,8 +61,8 @@ describe.skipIf(!configured)("shopify smoke (live)", () => {
 
 // Visible reminder when the suite is skipped — keeps it from looking like a
 // silent pass on misconfigured sandboxes.
-describe.skipIf(configured)("shopify smoke (skipped)", () => {
-  it("is skipped because SHOPIFY_STORE_DOMAIN / SHOPIFY_STOREFRONT_API_ACCESS_TOKEN are not set", () => {
+describe.skipIf(runLiveSmoke)("shopify smoke (skipped)", () => {
+  it("is skipped unless RUN_SHOPIFY_SMOKE=true requests a live external integration check", () => {
     expect(true).toBe(true);
   });
 });
