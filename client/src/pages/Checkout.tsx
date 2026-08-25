@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/CartContext";
 import { formatMoney } from "@/lib/format";
+import { formatSafePurchaseError, validatePurchaseIdentity } from "@/lib/purchaseValidation";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Landmark, LoaderCircle, MessageCircle, Smartphone, WalletCards } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -31,15 +32,17 @@ export default function Checkout() {
     event.preventDefault();
     if (!cart?.itemCount || !cart.id) { setNotice("أضف منتجًا واحدًا على الأقل قبل إتمام الطلب."); return; }
     if (!user) { setNotice("سجّل الدخول أولًا لحفظ طلبك ومتابعة حالته."); startLogin(); return; }
+    const form = new FormData(event.currentTarget);
+    const identity = validatePurchaseIdentity(String(form.get("name") || ""), String(form.get("phone") || ""));
+    if (!identity.ok) { setNotice(identity.message); return; }
     if (payment === "فودافون كاش" && !paymentSettings?.vodafoneCashNumber) { setNotice("فودافون كاش غير مفعّل من المدير بعد."); return; }
     if (payment === "فوري" && (!paymentSettings || paymentSettings.fawryMode === "معطّل")) { setNotice("فوري غير مفعّل من المدير بعد."); return; }
     if (payment === "واتساب" && !paymentSettings?.whatsappNumber) { setNotice("التواصل عبر واتساب غير مفعّل من المدير بعد."); return; }
-    const form = new FormData(event.currentTarget);
     try {
       const order = await createOrder.mutateAsync({
         cartId: cart.id,
-        customerName: String(form.get("name") || ""),
-        customerPhone: String(form.get("phone") || ""),
+        customerName: identity.customerName,
+        customerPhone: identity.customerPhone,
         shippingAddress: String(form.get("address") || ""),
         country: String(form.get("country") || ""),
         city: String(form.get("city") || ""),
@@ -47,7 +50,7 @@ export default function Checkout() {
       });
       setCreatedOrder({ id: order.id, orderNumber: order.orderNumber, paymentReference: order.paymentReference });
       setNotice("");
-    } catch (error) { setNotice(error instanceof Error ? error.message : "تعذر تسجيل الطلب. حاول مرة أخرى."); }
+    } catch (error) { setNotice(formatSafePurchaseError(error)); }
   };
 
   if (createdOrder) {
