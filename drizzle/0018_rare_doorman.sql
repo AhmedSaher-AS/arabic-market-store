@@ -1,0 +1,1 @@
+ALTER TABLE `paymentSettings` MODIFY COLUMN `whatsappNumber` varchar(32) NOT NULL DEFAULT '201554586850';

@@ -77,7 +77,7 @@ export const paymentSettings = mysqlTable("paymentSettings", {
   fawryMerchantLabel: varchar("fawryMerchantLabel", { length: 160 }).notNull(),
   fawryServiceCode: varchar("fawryServiceCode", { length: 64 }).notNull(),
   fawryInstructions: text("fawryInstructions").notNull(),
-  whatsappNumber: varchar("whatsappNumber", { length: 32 }).notNull().default("201146303129"),
+  whatsappNumber: varchar("whatsappNumber", { length: 32 }).notNull().default("201554586850"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreSeo } from "@/components/StoreSeo";
+import { WhatsAppTeamLinkGuard } from "@/components/WhatsAppTeamLinkGuard";
 import { useAuth } from "@/_core/hooks/useAuth";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
@@ -89,6 +90,7 @@ function App() {
           <CartProvider>
             <Toaster />
             <StoreSeo />
+            <WhatsAppTeamLinkGuard />
             <Router />
           </CartProvider>
         </TooltipProvider>

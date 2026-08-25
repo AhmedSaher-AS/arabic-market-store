@@ -9,7 +9,7 @@ import { FormEvent, useEffect, useState } from "react";
 
 type SettingsForm = { vodafoneCashNumber: string; vodafoneCashRecipient: string; fawryMode: "معطّل" | "إثبات يدوي" | "تكامل فوري"; fawryMerchantLabel: string; fawryServiceCode: string; fawryInstructions: string; whatsappNumber: string };
 type ProofPreview = { imageUrl: string; orderNumber: string; transactionReference: string | null; paidAmount: string | null; expectedAmount: string; currencyCode: string };
-const emptySettings: SettingsForm = { vodafoneCashNumber: "", vodafoneCashRecipient: "", fawryMode: "معطّل", fawryMerchantLabel: "", fawryServiceCode: "", fawryInstructions: "", whatsappNumber: "201146303129" };
+const emptySettings: SettingsForm = { vodafoneCashNumber: "", vodafoneCashRecipient: "", fawryMode: "معطّل", fawryMerchantLabel: "", fawryServiceCode: "", fawryInstructions: "", whatsappNumber: "201554586850" };
 
 export function PaymentOperations() {
   const utils = trpc.useUtils();

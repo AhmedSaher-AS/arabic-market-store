@@ -79,8 +79,8 @@ export default function DigitalBookDetails() {
   if (!book || error) return <StoreLayout><div className="container py-20 text-center"><BookOpen className="mx-auto h-10 w-10 text-[#50427b]" /><h1 className="mt-4 text-2xl font-black text-[#173c37]">لم يتم العثور على الكتاب</h1><Button asChild className="mt-6 rounded-xl bg-[#173c37]"><Link href="/كتب-رقمية">العودة إلى المكتبة</Link></Button></div></StoreLayout>;
 
   const isFree = Number(book.price) === 0;
-  const whatsappUrl = createdOrder ? `https://wa.me/201146303129?text=${encodeURIComponent(`مرحبًا، أريد إتمام سداد طلب الكتاب «${book.title}». رقم الطلب: ${createdOrder.orderNumber}.`)}` : "";
-  const purchaseWhatsappUrl = `https://wa.me/201146303129?text=${encodeURIComponent(`مرحبًا، أرغب في شراء كتاب «${book.title}» من سوقك العربي. أريد معرفة طريقة الدفع المناسبة.`)}`;
+  const whatsappUrl = createdOrder ? `https://wa.me/201554586850?text=${encodeURIComponent(`مرحبًا، أريد إتمام سداد طلب الكتاب «${book.title}». رقم الطلب: ${createdOrder.orderNumber}.`)}` : "";
+  const purchaseWhatsappUrl = `https://wa.me/201554586850?text=${encodeURIComponent(`مرحبًا، أرغب في شراء كتاب «${book.title}» من سوقك العربي. أريد معرفة طريقة الدفع المناسبة.`)}`;
   const openPurchase = () => { setCreatedOrder(null); setShowPurchase(true); };
   const shareBook = async () => {
     const url = `${window.location.origin}/كتب-رقمية/${encodeURIComponent(book.productHandle)}`;
