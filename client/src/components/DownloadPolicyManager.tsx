@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
+import { formatUserFacingError } from "@/lib/userFacingError";
 import { Download, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -14,7 +15,7 @@ export function DownloadPolicyManager() {
       void utils.digitalBooks.adminList.invalidate();
       toast.success("تم حفظ حد التنزيل للكتاب.");
     },
-    onError: error => toast.error(error.message || "تعذر حفظ حد التنزيل."),
+    onError: error => toast.error(formatUserFacingError(error, "تعذر حفظ حد التنزيل الآن. حاول مرة أخرى.")),
   });
 
   const saveLimit = (book: typeof books[number]) => {

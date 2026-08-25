@@ -35,6 +35,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   app.disable("x-powered-by");
+  // The managed deployment terminates TLS at one trusted proxy before Express.
+  // This lets rate limiting use the real client address from X-Forwarded-For.
+  app.set("trust proxy", 1);
   app.use(securityHeaders);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

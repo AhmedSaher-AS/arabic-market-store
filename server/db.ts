@@ -275,7 +275,7 @@ export async function getPaymentSettings() {
     fawryMerchantLabel: "",
     fawryServiceCode: "",
     fawryInstructions: "",
-    whatsappNumber: "201146303129",
+    whatsappNumber: "201554586850",
   });
   const created = await db.select().from(paymentSettings).where(eq(paymentSettings.id, 1)).limit(1);
   if (!created[0]) throw new Error("تعذر إعداد وسائل الدفع.");

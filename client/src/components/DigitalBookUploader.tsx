@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { formatUserFacingError } from "@/lib/userFacingError";
 import { BadgeCheck, BookOpen, CircleDollarSign, FileText, FileUp, ImageOff, ImagePlus, LoaderCircle, PencilLine, Tags, ToggleLeft, Trash2 } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Link } from "wouter";
@@ -81,7 +82,7 @@ export function DigitalBookUploader() {
         coverDataUrl: newBookCover ? await toDataUrl(newBookCover) : undefined, sampleDataUrl: newBookSample ? await toDataUrl(newBookSample) : undefined,
       });
       setMessage(result.book.isAvailable ? "تم نشر الكتاب بنجاح وهو ظاهر الآن في المكتبة." : "تم حفظ الكتاب بنجاح، لكنه متوقف حاليًا ولن يظهر للقراء حتى تفعّل التوفر."); setMessageTone("success"); setPublishedBook(result.book); setDraft(initialEditor()); setFile(null); setNewBookCover(null); setNewBookSample(null);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "تعذر رفع الكتاب ولم يتم نشره."); setMessageTone("error"); }
+    } catch (error) { setMessage(formatUserFacingError(error, "تعذر رفع الكتاب الآن. راجع ملف PDF والبيانات ثم حاول مرة أخرى.")); setMessageTone("error"); }
   };
   const toEditor = (book: typeof books[number]): BookEditor => ({
     id: book.id, productHandle: book.productHandle, title: book.title, description: book.description,
