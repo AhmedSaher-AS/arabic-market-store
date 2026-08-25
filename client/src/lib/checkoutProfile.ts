@@ -1,5 +1,5 @@
 export const CHECKOUT_PROFILE_STORAGE_KEY = "arabic-market-checkout-profile-v1";
-export const paymentMethods = ["فودافون كاش", "فوري", "واتساب", "إنستا باي", "فيزا/ماستركارد", "PayPal"] as const;
+export const paymentMethods = ["واتساب", "فودافون كاش", "فوري", "PayPal"] as const;
 
 export type PaymentMethod = (typeof paymentMethods)[number];
 
@@ -27,7 +27,7 @@ export function parseCheckoutProfile(raw: string | null): CheckoutProfile | null
     const customerName = candidate.customerName.trim();
     const customerPhone = normalizeEgyptianMobile(candidate.customerPhone);
     if (!customerName || !customerPhone) return null;
-    const paymentMethod = typeof candidate.paymentMethod === "string" && paymentMethods.includes(candidate.paymentMethod as PaymentMethod) ? candidate.paymentMethod as PaymentMethod : "فودافون كاش";
+    const paymentMethod = typeof candidate.paymentMethod === "string" && paymentMethods.includes(candidate.paymentMethod as PaymentMethod) ? candidate.paymentMethod as PaymentMethod : "واتساب";
     return { customerName, customerPhone, paymentMethod };
   } catch {
     return null;

@@ -12,6 +12,10 @@ describe("parseCheckoutProfile", () => {
     expect(parseCheckoutProfile('{"customerName":"","customerPhone":""}')).toBeNull();
   });
 
+  it("uses WhatsApp when a saved legacy payment method is no longer offered", () => {
+    expect(parseCheckoutProfile('{"customerName":"أحمد","customerPhone":"01111111111","paymentMethod":"فيزا/ماستركارد"}')).toEqual({ customerName: "أحمد", customerPhone: "01111111111", paymentMethod: "واتساب" });
+  });
+
   it("normalizes Egyptian mobile numbers and rejects invalid formats", () => {
     expect(normalizeEgyptianMobile("+20 11 1111 1111")).toBe("01111111111");
     expect(normalizeEgyptianMobile("٠١١١١١١١١١١")).toBe("01111111111");
